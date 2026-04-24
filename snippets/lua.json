@@ -1,0 +1,82 @@
+{
+  "nanos: Package.Subscribe('Load')": {
+    "prefix": "nwload",
+    "body": [
+      "Package.Subscribe(\"Load\", function()",
+      "\t$0",
+      "end)"
+    ],
+    "description": "Subscribe to the package Load event (fires once when the package starts)."
+  },
+  "nanos: Package.Subscribe('Unload')": {
+    "prefix": "nwunload",
+    "body": [
+      "Package.Subscribe(\"Unload\", function()",
+      "\t$0",
+      "end)"
+    ],
+    "description": "Subscribe to the package Unload event (fires when the package is unloaded)."
+  },
+  "nanos: Events.Subscribe": {
+    "prefix": "nwevent",
+    "body": [
+      "Events.Subscribe(\"${1:EventName}\", function(${2:args})",
+      "\t$0",
+      "end)"
+    ],
+    "description": "Subscribe to a custom nanos world event."
+  },
+  "nanos: Events.Call": {
+    "prefix": "nwcall",
+    "body": [
+      "Events.Call(\"${1:EventName}\"${2:, args})"
+    ],
+    "description": "Trigger a custom nanos world event on the current side."
+  },
+  "nanos: Events.CallRemote (server->client)": {
+    "prefix": "nwcallremote",
+    "body": [
+      "Events.CallRemote(\"${1:EventName}\", ${2:player}${3:, args})"
+    ],
+    "description": "Call a remote event from server to a specific client (or Events.BroadcastRemote for all clients)."
+  },
+  "nanos: Timer.SetTimeout": {
+    "prefix": "nwtimeout",
+    "body": [
+      "Timer.SetTimeout(function()",
+      "\t$0",
+      "end, ${1:1000})"
+    ],
+    "description": "Run a function once after a delay in milliseconds."
+  },
+  "nanos: Timer.SetInterval": {
+    "prefix": "nwinterval",
+    "body": [
+      "Timer.SetInterval(function()",
+      "\t$0",
+      "end, ${1:1000})"
+    ],
+    "description": "Run a function repeatedly on an interval in milliseconds."
+  },
+  "nanos: Character spawn": {
+    "prefix": "nwchar",
+    "body": [
+      "local ${1:character} = Character(Vector(${2:0}, ${3:0}, ${4:0}), Rotator(0, 0, 0), \"${5:nanos-world::SK_Mannequin}\")"
+    ],
+    "description": "Spawn a Character actor at a location."
+  },
+  "nanos: require Package": {
+    "prefix": "nwrequire",
+    "body": [
+      "Package.Require(\"${1:file.lua}\")"
+    ],
+    "description": "Require a file from the current package."
+  },
+  "nanos: Package.Export": {
+    "prefix": "nwexport",
+    "body": [
+      "Package.Export(\"${1:FunctionName}\", ${2:function_reference})"
+    ],
+    "description": "Export a function from the package so other packages can access it."
+  }
+}

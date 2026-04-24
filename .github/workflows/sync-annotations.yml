@@ -1,0 +1,49 @@
+name: Sync nanos world annotations
+
+on:
+  schedule:
+    # Every day at 04:17 UTC. Offset to avoid cron-hour stampedes.
+    - cron: "17 4 * * *"
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Fetch latest annotations from upstream docgen-output
+        run: |
+          set -euo pipefail
+          mkdir -p library
+          curl -fsSL \
+            https://raw.githubusercontent.com/nanos-world/vscode-extension/docgen-output/annotations.lua \
+            -o library/nanos-world.lua
+          echo "Fetched $(wc -c < library/nanos-world.lua) bytes."
+
+      - name: Check for changes
+        id: diff
+        run: |
+          if git diff --quiet -- library/nanos-world.lua; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Open pull request
+        if: steps.diff.outputs.changed == 'true'
+        uses: peter-evans/create-pull-request@v6
+        with:
+          branch: bot/sync-annotations
+          commit-message: "chore: sync nanos world annotations from upstream docgen-output"
+          title: "Sync nanos world annotations"
+          body: |
+            Automated sync of `library/nanos-world.lua` from the upstream
+            `docgen-output` branch of
+            [nanos-world/vscode-extension](https://github.com/nanos-world/vscode-extension).
+          labels: automated
