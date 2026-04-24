@@ -1,6 +1,4 @@
-/target
-/grammars
-Cargo.lock
+target/
 *.wasm
 .DS_Store
 Thumbs.db
