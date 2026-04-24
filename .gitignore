@@ -2,3 +2,4 @@ target/
 *.wasm
 .DS_Store
 Thumbs.db
+grammars
