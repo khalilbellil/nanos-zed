@@ -5,6 +5,89 @@ All notable changes to this Zed extension are listed here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and the project follows [Semantic Versioning](https://semver.org/).
 
+## [0.2.4] - 2026-04-25
+
+### Added
+
+- The four upstream "side-indicator" badge `<img>` tags
+  (`both.png`, `client-only.png`, `authority-only.png`,
+  `network-authority.png`) are now rewritten to emoji at transform time so
+  the side hint actually shows up in Zed's hover popover. Zed's editor
+  hover renderer doesn't fetch remote images, so the previous `![](url)`
+  rendering produced empty space; the emoji match the docs site's own
+  vocabulary:
+  - `both.png` → 🟧🟦 (Client & Server)
+  - `client-only.png` → 🟧 (Client only)
+  - `authority-only.png` → 👑 (Authority side)
+  - `network-authority.png` → 🛰️ (Network Authority)
+- Match is by URL suffix (`/assets/<name>.png`) rather than full URL, so
+  upstream switching from `raw.github.com` to
+  `raw.githubusercontent.com` (or moving the asset into a different
+  branch) doesn't break the substitution.
+
+### Notes
+
+- Any `<img>` whose `src` doesn't match one of the four known badges
+  still falls back to the previous `![](url)` rendering, so future
+  upstream additions stay visible (as a hyperlink) instead of being
+  silently dropped.
+
+## [0.2.3] - 2026-04-25
+
+### Fixed
+
+- `docs` hover links now point at pages that actually exist on
+  `docs.nanos-world.com`. The upstream annotations file emits some URLs
+  that 404 on the live site; the in-memory post-processor now repairs them
+  before they reach LuaLS:
+  - **Multi-word entity classes** (`SceneCapture`, `CharacterSimple`,
+    `InstancedStaticMesh`, `WebUI`, `Text3D`, `Widget3D`, `VehicleWheeled`,
+    `VehicleWater`, `StaticMesh`, `TextRender`, …) get their slug
+    kebab-cased to match `/classes/<kebab>`. The map is built dynamically
+    from `---@class` declarations in the bundled file, so newly-added
+    upstream classes are picked up automatically.
+  - **Utility libraries** (`NanosMath`, `NanosTable`, `NanosUtils`, `JSON`,
+    `TOML`) get their category swapped from `/static-classes/` to
+    `/utility-libraries/` to match the docs site layout.
+  - **Math/value structs** (`Vector`, `Vector2D`, `Color`, `Rotator`,
+    `Quat`, `Matrix`) get their category swapped from `/static-classes/`
+    to `/structs/` for the same reason.
+- Anchor (`#static-function-…`) and query suffixes are preserved across
+  rewrites, so deep links keep landing on the right section.
+
+### Notes
+
+- Static classes whose upstream URL is already correct (`PostProcess`,
+  `HTTP`, `Events`, `Chat`, `Client`, …) are left untouched.
+- `<img>` URLs (the Client/Server/Authority badges hosted on
+  `raw.github.com`) and any URL that doesn't point at
+  `docs.nanos-world.com` pass through unchanged.
+
+## [0.2.2] - 2026-04-25
+
+### Added
+
+- Hover docstrings now render images, links, bold, italic, inline code and
+  list items. The bundled annotations file embeds raw HTML
+  (`<img src="…"> <b>[Client/Server Side]</b> <a href="…">docs</a>`,
+  `<br>`, `<code>`, `<ul><li>…</li></ul>`, etc.) which Zed's CommonMark
+  hover renderer would otherwise print verbatim. The extension now rewrites
+  the docstrings to Markdown on first launch, before they reach LuaLS:
+  `<b>` → `**bold**`, `<i>` → `*italic*`, `<code>` → `` `code` ``,
+  `<br>` → comment-line split, `<img src="…">` → `![](…)`,
+  `<a href="…">label</a>` → `[label](…)`. Relative URLs are absolutized
+  against `https://docs.nanos-world.com`.
+- `src/html_to_markdown.rs` with unit tests for the rewrite rules.
+
+### Notes
+
+- The upstream annotations file on disk is left untouched. The transform
+  happens in-memory at LSP-launch time and is written into the extension's
+  work directory as `nanos-world-annotations.lua`.
+- Unknown HTML tags fall through unchanged, so newly-introduced upstream
+  tags won't break the file — they'll just render as raw HTML until the
+  transformer learns them.
+
 ## [0.2.1] - 2026-04-24
 
 ### Added

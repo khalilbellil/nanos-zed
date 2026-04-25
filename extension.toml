@@ -1,7 +1,7 @@
 id = "nanos-world-lua"
 name = "Nanos World Lua"
 description = "Plug-and-play nanos world Lua API support for Zed (LuaLS + bundled annotations)."
-version = "0.2.1"
+version = "0.2.4"
 schema_version = 1
 authors = ["Khalil Bellil <khalilbellil@gmail.com>"]
 repository = "https://github.com/khalilbellil/nanos-zed"

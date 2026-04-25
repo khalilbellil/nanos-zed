@@ -24,6 +24,8 @@ use std::path::PathBuf;
 use serde_json::{Map, Value};
 use zed_extension_api::{self as zed, settings::LspSettings, LanguageServerId, Result};
 
+mod html_to_markdown;
+
 /// The generated nanos world EmmyLua annotations bundle.
 ///
 /// Sourced from the `docgen-output` branch of
@@ -44,6 +46,11 @@ struct NanosWorldLuaExtension {
 impl NanosWorldLuaExtension {
     /// Write the embedded annotations to disk (if not already present for
     /// this session) and return an absolute path to the file.
+    ///
+    /// Before writing, the embedded HTML-flavored docstrings are rewritten to
+    /// Markdown so Zed's hover renderer can display images, links, bold and
+    /// inline code instead of raw `<img>` / `<a>` / `<b>` tags. See the
+    /// `html_to_markdown` module for the rewrite rules.
     fn ensure_annotations_written(&mut self) -> Result<String> {
         if let Some(path) = &self.cached_annotations_path {
             if fs::metadata(path).is_ok_and(|stat| stat.is_file()) {
@@ -51,7 +58,8 @@ impl NanosWorldLuaExtension {
             }
         }
 
-        fs::write(ANNOTATIONS_FILENAME, BUNDLED_ANNOTATIONS)
+        let rendered = html_to_markdown::transform_annotations(BUNDLED_ANNOTATIONS);
+        fs::write(ANNOTATIONS_FILENAME, &rendered)
             .map_err(|e| format!("failed to write bundled annotations: {e}"))?;
 
         let cwd = std::env::current_dir()
