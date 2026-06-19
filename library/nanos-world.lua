@@ -2097,9 +2097,8 @@ function Client.Disconnect() end
 ---@param location Vector @The center location of the search
 ---@param radius number @The search radius
 ---@param only_classes? string[] @Only actors of these classes will be returned (pass empty for all classes) (Default: [])
----@param dimension? integer @The dimension to search in (pass 0 for all dimensions) (Default: 0)
 ---@return Actor[] @The actors found in radius
-function Client.GetActorsInRadius(location, radius, only_classes, dimension) end
+function Client.GetActorsInRadius(location, radius, only_classes) end
 
 ---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/client-only.png" height="21"> <b>[Client Side]</b>
 ---<a href="https://docs.nanos-world.com/docs/scripting-reference/static-classes/client#static-function-getallvalueskeys">docs</a>
@@ -4633,13 +4632,21 @@ function Package.GetVersion() end
 function Package.IsUnloading() end
 
 ---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/both.png" height="21"> <b>[Client/Server Side]</b>
+---<a href="https://docs.nanos-world.com/docs/scripting-reference/static-classes/package#static-function-loadfile">docs</a>
+---
+---Compiles a .lua file and returns a function to run it. To be used for loading files in a sandboxed environment.<br/><br/>Supports the same searchers as <a href="#static-function-require">Package.Require</a>.
+---@param file_path string @Path to the script file to compile
+---@return function @the compiled function to run the script, allowing you to pass a environment env table for the script
+function Package.LoadFile(file_path) end
+
+---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/both.png" height="21"> <b>[Client/Server Side]</b>
 ---<a href="https://docs.nanos-world.com/docs/scripting-reference/static-classes/package#static-function-require">docs</a>
 ---
----Includes new .lua files<br/><br/>We currently support 5 searchers, which are looked in the following order:<ol><li>Relative to <code>current-file-path/</code></li><li>Relative to <code>current-package/Client/</code> or <code>current-package/Server/</code> (depending on your side)</li><li>Relative to <code>current-package/Shared/</code></li><li>Relative to <code>current-package/</code></li><li>Relative to <code>Packages/</code></li></ol><p>Note: Clients will only download and have access to <code>Client/</code> and <code>Shared/</code> folders.</p>
----@param script_file string @Path to the script file to require
+---Loads a .lua file. Note that this method caches the result, so further calls return the cached value.<br/><br/>We currently support 5 searchers, which are looked in the following order:<ol><li>Relative to <code>current-file-path/</code></li><li>Relative to <code>current-package/Client/</code> or <code>current-package/Server/</code> (depending on your side)</li><li>Relative to <code>current-package/Shared/</code></li><li>Relative to <code>current-package/</code></li><li>Relative to <code>Packages/</code></li></ol><p>Note: Clients will only download and have access to <code>Client/</code> and <code>Shared/</code> folders.</p>
+---@param file_path string @Path to the script file to load
 ---@param force_load? boolean @Whether to force loading this file even if it was already loaded (Default: false)
----@return any @Any return values from the included file
-function Package.Require(script_file, force_load) end
+---@return any @any return values from the included file
+function Package.Require(file_path, force_load) end
 
 ---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/both.png" height="21"> <b>[Client/Server Side]</b>
 ---<a href="https://docs.nanos-world.com/docs/scripting-reference/static-classes/package#static-function-setpersistentdata">docs</a>
@@ -5551,7 +5558,7 @@ function Player:GetCameraRotation() end
 ---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/player#function-getcontrolledcharacter">docs</a>
 ---
 ---
----@return Character? 
+---@return Pawn? 
 function Player:GetControlledCharacter() end
 
 ---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/both.png" height="21"> <b>[Client/Server Side]</b>
@@ -5634,7 +5641,7 @@ function Player:Kick(reason) end
 ---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/server-only.png" height="21"> <b>[Server Side]</b>
 ---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/player#function-possess">docs</a>
 ---
----Makes a Player to possess and control a Pawn
+---Makes a Player to possess and control a Pawn (Character)
 ---@param new_pawn Pawn 
 ---@param blend_time? number @(Default: 0)
 ---@param exp? number @(Default: 0)
@@ -5837,10 +5844,10 @@ function Player:UnPossess() end
 ---@overload fun(event_name: "ClassRegister", callback: fun(class: table)): fun(class: table) @Triggered when a new Class is registered with the <a href='/docs/core-concepts/scripting/inheriting-classes'>Inheriting System</a>
 ---@overload fun(event_name: "Destroy", callback: fun(self: Player)): fun(self: Player) @Triggered when an Entity is destroyed
 ---@overload fun(event_name: "DimensionChange", callback: fun(self: Player, old_dimension: integer, new_dimension: integer)): fun(self: Player, old_dimension: integer, new_dimension: integer) @Triggered when a Player changes it's dimension
----@overload fun(event_name: "Possess", callback: fun(self: Player, character: Character)): fun(self: Player, character: Character) @Trigerred when Player starts controlling a Character
+---@overload fun(event_name: "Possess", callback: fun(self: Player, pawn: Pawn)): fun(self: Player, pawn: Pawn) @Triggered when Player starts controlling a Pawn (Character)
 ---@overload fun(event_name: "Ready", callback: fun(self: Player)): fun(self: Player) @Triggered when Player is ready (the client fully joined, loaded the map and all entities and is ready to play)
 ---@overload fun(event_name: "Spawn", callback: fun(self: Player)): fun(self: Player) @Triggered when an Entity is spawned/created
----@overload fun(event_name: "UnPossess", callback: fun(self: Player, character: Character)): fun(self: Player, character: Character) @A Character was released from the Player
+---@overload fun(event_name: "UnPossess", callback: fun(self: Player, pawn: Pawn)): fun(self: Player, pawn: Pawn) @A Pawn (Character) was unpossessed from the Player
 ---@overload fun(event_name: "ValueChange", callback: fun(self: Player, key: string, value: any)): fun(self: Player, key: string, value: any) @Triggered when an Entity has a value changed with <code>:SetValue()</code>
 ---@overload fun(event_name: "VOIP", callback: fun(self: Player, is_talking: boolean): boolean?): fun(self: Player, is_talking: boolean): boolean? @When a Player starts/ends using VOIP
 ---@overload fun(event_name: "VOIPGlobalChannelSettingChange", callback: fun(self: Player, channel: integer, old_setting: VOIPSetting, new_setting: VOIPSetting)): fun(self: Player, channel: integer, old_setting: VOIPSetting, new_setting: VOIPSetting) @Triggered when a global VOIP channel setting changes for this player
@@ -5855,10 +5862,10 @@ function Player.Subscribe(event_name, callback) end
 ---@overload fun(self: Player, event_name: "ClassRegister", callback: fun(class: table)): fun(class: table) @Triggered when a new Class is registered with the <a href='/docs/core-concepts/scripting/inheriting-classes'>Inheriting System</a>
 ---@overload fun(self: Player, event_name: "Destroy", callback: fun(self: Player)): fun(self: Player) @Triggered when an Entity is destroyed
 ---@overload fun(self: Player, event_name: "DimensionChange", callback: fun(self: Player, old_dimension: integer, new_dimension: integer)): fun(self: Player, old_dimension: integer, new_dimension: integer) @Triggered when a Player changes it's dimension
----@overload fun(self: Player, event_name: "Possess", callback: fun(self: Player, character: Character)): fun(self: Player, character: Character) @Trigerred when Player starts controlling a Character
+---@overload fun(self: Player, event_name: "Possess", callback: fun(self: Player, pawn: Pawn)): fun(self: Player, pawn: Pawn) @Triggered when Player starts controlling a Pawn (Character)
 ---@overload fun(self: Player, event_name: "Ready", callback: fun(self: Player)): fun(self: Player) @Triggered when Player is ready (the client fully joined, loaded the map and all entities and is ready to play)
 ---@overload fun(self: Player, event_name: "Spawn", callback: fun(self: Player)): fun(self: Player) @Triggered when an Entity is spawned/created
----@overload fun(self: Player, event_name: "UnPossess", callback: fun(self: Player, character: Character)): fun(self: Player, character: Character) @A Character was released from the Player
+---@overload fun(self: Player, event_name: "UnPossess", callback: fun(self: Player, pawn: Pawn)): fun(self: Player, pawn: Pawn) @A Pawn (Character) was unpossessed from the Player
 ---@overload fun(self: Player, event_name: "ValueChange", callback: fun(self: Player, key: string, value: any)): fun(self: Player, key: string, value: any) @Triggered when an Entity has a value changed with <code>:SetValue()</code>
 ---@overload fun(self: Player, event_name: "VOIP", callback: fun(self: Player, is_talking: boolean): boolean?): fun(self: Player, is_talking: boolean): boolean? @When a Player starts/ends using VOIP
 ---@overload fun(self: Player, event_name: "VOIPGlobalChannelSettingChange", callback: fun(self: Player, channel: integer, old_setting: VOIPSetting, new_setting: VOIPSetting)): fun(self: Player, channel: integer, old_setting: VOIPSetting, new_setting: VOIPSetting) @Triggered when a global VOIP channel setting changes for this player
@@ -5871,10 +5878,10 @@ function Player:Subscribe(event_name, callback) end
 ---@overload fun(self: Player, event_name: "ClassRegister", callback: fun(class: table)) @Triggered when a new Class is registered with the <a href='/docs/core-concepts/scripting/inheriting-classes'>Inheriting System</a>
 ---@overload fun(self: Player, event_name: "Destroy", callback: fun(self: Player)) @Triggered when an Entity is destroyed
 ---@overload fun(self: Player, event_name: "DimensionChange", callback: fun(self: Player, old_dimension: integer, new_dimension: integer)) @Triggered when a Player changes it's dimension
----@overload fun(self: Player, event_name: "Possess", callback: fun(self: Player, character: Character)) @Trigerred when Player starts controlling a Character
+---@overload fun(self: Player, event_name: "Possess", callback: fun(self: Player, pawn: Pawn)) @Triggered when Player starts controlling a Pawn (Character)
 ---@overload fun(self: Player, event_name: "Ready", callback: fun(self: Player)) @Triggered when Player is ready (the client fully joined, loaded the map and all entities and is ready to play)
 ---@overload fun(self: Player, event_name: "Spawn", callback: fun(self: Player)) @Triggered when an Entity is spawned/created
----@overload fun(self: Player, event_name: "UnPossess", callback: fun(self: Player, character: Character)) @A Character was released from the Player
+---@overload fun(self: Player, event_name: "UnPossess", callback: fun(self: Player, pawn: Pawn)) @A Pawn (Character) was unpossessed from the Player
 ---@overload fun(self: Player, event_name: "ValueChange", callback: fun(self: Player, key: string, value: any)) @Triggered when an Entity has a value changed with <code>:SetValue()</code>
 ---@overload fun(self: Player, event_name: "VOIP", callback: fun(self: Player, is_talking: boolean): boolean?) @When a Player starts/ends using VOIP
 ---@overload fun(self: Player, event_name: "VOIPGlobalChannelSettingChange", callback: fun(self: Player, channel: integer, old_setting: VOIPSetting, new_setting: VOIPSetting)) @Triggered when a global VOIP channel setting changes for this player
@@ -5888,10 +5895,10 @@ function Player:Unsubscribe(event_name, callback) end
 ---@overload fun(event_name: "ClassRegister", callback: fun(class: table)) @Triggered when a new Class is registered with the <a href='/docs/core-concepts/scripting/inheriting-classes'>Inheriting System</a>
 ---@overload fun(event_name: "Destroy", callback: fun(self: Player)) @Triggered when an Entity is destroyed
 ---@overload fun(event_name: "DimensionChange", callback: fun(self: Player, old_dimension: integer, new_dimension: integer)) @Triggered when a Player changes it's dimension
----@overload fun(event_name: "Possess", callback: fun(self: Player, character: Character)) @Trigerred when Player starts controlling a Character
+---@overload fun(event_name: "Possess", callback: fun(self: Player, pawn: Pawn)) @Triggered when Player starts controlling a Pawn (Character)
 ---@overload fun(event_name: "Ready", callback: fun(self: Player)) @Triggered when Player is ready (the client fully joined, loaded the map and all entities and is ready to play)
 ---@overload fun(event_name: "Spawn", callback: fun(self: Player)) @Triggered when an Entity is spawned/created
----@overload fun(event_name: "UnPossess", callback: fun(self: Player, character: Character)) @A Character was released from the Player
+---@overload fun(event_name: "UnPossess", callback: fun(self: Player, pawn: Pawn)) @A Pawn (Character) was unpossessed from the Player
 ---@overload fun(event_name: "ValueChange", callback: fun(self: Player, key: string, value: any)) @Triggered when an Entity has a value changed with <code>:SetValue()</code>
 ---@overload fun(event_name: "VOIP", callback: fun(self: Player, is_talking: boolean): boolean?) @When a Player starts/ends using VOIP
 ---@overload fun(event_name: "VOIPGlobalChannelSettingChange", callback: fun(self: Player, channel: integer, old_setting: VOIPSetting, new_setting: VOIPSetting)) @Triggered when a global VOIP channel setting changes for this player
