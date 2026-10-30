@@ -1,5 +1,9 @@
 ---@meta
 
+---Models the values yielded by pairs(Class.GetPairs()).
+---The engine returns a pairs-compatible proxy, not a copy of the entities table.
+---@class EntityIterator<T>: { [any]: T }
+
 ---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/both.png" height="21"> <b>[Client/Server Side]</b>
 ---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/base-classes/actor">docs</a>
 ---
@@ -20,6 +24,20 @@ Actor = {}
 ---@param custom_values? table @An optional table with custom values to be set in the inherited class table (Default: {})
 ---@return Actor.Inherited @The new Class table, inheriting from Actor
 function Actor.Inherit(name, custom_values) end
+
+---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/both.png" height="21"> <b>[Client/Server Side]</b>
+---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/base-classes/entity#static-function-getall">docs</a>
+---
+---Returns a table containing all Entities of the class this is called on
+---@return Actor[] @Copy of table containing all Entities
+function Actor.GetAll() end
+
+---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/both.png" height="21"> <b>[Client/Server Side]</b>
+---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/base-classes/entity#static-function-getpairs">docs</a>
+---
+---Returns an iterator with all Entities of this class to be used with <code>pairs()</code>. This is a more performant method than <code>GetAll()</code>, as it will return the iterator to access the Entities directly instead of creating and returning a copy of the Entities table.<br><br><b>Note:</b> Destroying Entities from inside a <code>GetPairs()</code> loop will cause the iterable to change size during the process. If you want to loop-and-destroy, please use <code>GetAll()</code>.
+---@return EntityIterator<Actor> @Iterator with all Entities of this class
+function Actor.GetPairs() end
 
 ---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/client-only.png" height="21"> <b>[Client Side]</b>
 ---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/base-classes/actor#function-addactortag">docs</a>
@@ -209,7 +227,7 @@ function Actor:GetScreenPercentage() end
 ---Gets a Socket Transform in world space given a bone or socket name
 ---@param socket_name string @Name of the socket
 ---@param attachable_id? string @The attachable ID (set with <code>AddSkeletalMeshAttached</code> or <code>AddStaticMeshAttached</code>) to read the Socket from. Pass empty to read from the main mesh (Default: "")
----@return { Location: Vector, Rotation: Rotator } @Socket Transform in world space given a bone or socket name
+---@return { Location: Vector, Rotation: Rotator, Scale: Vector } @Socket Transform in world space given a bone or socket name
 function Actor:GetSocketTransform(socket_name, attachable_id) end
 
 ---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/both.png" height="21"> <b>[Client/Server Side]</b>
@@ -232,6 +250,13 @@ function Actor:HasNetworkAuthority() end
 ---Returns true if gravity is enabled on this Actor
 ---@return boolean @Whether gravity is enabled on this Actor
 function Actor:IsGravityEnabled() end
+
+---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/both.png" height="21"> <b>[Client/Server Side]</b>
+---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/base-classes/actor#function-isimpulseondamage">docs</a>
+---
+---Returns true if taking damage pushes this Actor's physics body
+---@return boolean @Whether taking damage pushes this Actor
+function Actor:IsImpulseOnDamage() end
 
 ---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/both.png" height="21"> <b>[Client/Server Side]</b>
 ---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/base-classes/actor#function-isinwater">docs</a>
@@ -261,10 +286,25 @@ function Actor:IsVisible() end
 ---@param tag string @The tag to remove
 function Actor:RemoveActorTag(tag) end
 
+---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/authority-only.png" height="21"> <b>[Authority Side]</b>
+---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/base-classes/actor#function-resetvelocity">docs</a>
+---
+---Resets this Actor's linear and angular velocities to zero.<br/>For Pawns, also resets the character movement velocity.
+function Actor:ResetVelocity() end
+
+---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/network-authority.png" height="21"> <b>[Network Authority]</b>
+---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/base-classes/actor#function-rotaterelativeto">docs</a>
+---
+---Like <code>SetRelativeRotation</code>, it keeps following the parent while it rotates. It can only be used while the actor is attached, and it is cancelled if the actor gets attached to something else or detached
+---@param relative_rotation Rotator @The target rotation, relative to the parent
+---@param time number @Time to interpolate from current location to target location
+---@param exp? number @Exponent used to smooth interpolation. Use <code>0</code> for linear movement (Default: 0)
+function Actor:RotateRelativeTo(relative_rotation, time, exp) end
+
 ---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/network-authority.png" height="21"> <b>[Network Authority]</b>
 ---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/base-classes/actor#function-rotateto">docs</a>
 ---
----Smoothly rotates this actor to an angle over a certain time
+---It can't be used while the actor is attached, grabbed, picked or in a vehicle. Use <code>RotateRelativeTo</code> for attached actors
 ---@param rotation Rotator @The target rotation
 ---@param time number @Time to interpolate from current location to target location
 ---@param exp? number @Exponent used to smooth interpolation. Use <code>0</code> for linear movement (Default: 0)
@@ -327,6 +367,13 @@ function Actor:SetGravityEnabled(gravity_enabled) end
 ---@param is_enabled boolean @Whether the highlight is enabled
 ---@param index? integer @Index to use (should be <code>0</code>, <code>1</code> or <code>2</code>) (Default: 0)
 function Actor:SetHighlightEnabled(is_enabled, index) end
+
+---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/both.png" height="21"> <b>[Client/Server Side]</b>
+---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/base-classes/actor#function-setimpulseondamage">docs</a>
+---
+---Useful for things that should react to shots without being knocked around, like a shooting target that still falls with gravity and can be moved by other means. Enabled by default
+---@param impulse_on_damage boolean @Whether taking damage pushes this Actor
+function Actor:SetImpulseOnDamage(impulse_on_damage) end
 
 ---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/authority-only.png" height="21"> <b>[Authority Side]</b>
 ---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/base-classes/actor#function-setlifespan">docs</a>
@@ -407,9 +454,18 @@ function Actor:SetScale(scale) end
 function Actor:SetVisibility(is_visible) end
 
 ---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/network-authority.png" height="21"> <b>[Network Authority]</b>
+---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/base-classes/actor#function-translaterelativeto">docs</a>
+---
+---Like <code>SetRelativeLocation</code>, it keeps following the parent while it moves. It can only be used while the actor is attached, and it is cancelled if the actor gets attached to something else or detached
+---@param relative_location Vector @The target location, relative to the parent
+---@param time number @Time to interpolate from current location to target location
+---@param exp? number @Exponent used to smooth interpolation. Use <code>0</code> for linear movement (Default: 0)
+function Actor:TranslateRelativeTo(relative_location, time, exp) end
+
+---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/network-authority.png" height="21"> <b>[Network Authority]</b>
 ---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/base-classes/actor#function-translateto">docs</a>
 ---
----Smoothly moves this actor to a location over a certain time
+---It can't be used while the actor is attached, grabbed, picked or in a vehicle. Use <code>TranslateRelativeTo</code> for attached actors
 ---@param location Vector @The target location
 ---@param time number @Time to interpolate from current location to target location
 ---@param exp? number @Exponent used to smooth interpolation. Use <code>0</code> for linear movement (Default: 0)
@@ -599,7 +655,7 @@ Billboard = {}
 ---Calls the original Billboard Constructor. Call this from an inherited Class' <code>Constructor</code> through <code>self.Super:Constructor(...)</code>. See the <a href="https://docs.nanos-world.com/docs/core-concepts/scripting/inheriting-classes">Inheriting System</a>
 ---@param location Vector @World location to spawn at
 ---@param material_asset string @The Material to render
----@param size? Vector2D @Size in pixels (Default: Vector2D(32, 32))
+---@param size? Vector2D @Half size of the Billboard, X is the width and Y the height (before 1.166.0 they were swapped). In units, or in screen space if size_in_screen_space is true (Default: Vector2D(32, 32))
 ---@param size_in_screen_space? boolean @Size is in Screen or World Space (Default: false)
 function Billboard:Constructor(location, material_asset, size, size_in_screen_space) end
 
@@ -615,6 +671,20 @@ function Billboard:Constructor(location, material_asset, size, size_in_screen_sp
 ---@param custom_values? table @An optional table with custom values to be set in the inherited class table (Default: {})
 ---@return Billboard.Inherited @The new Class table, inheriting from Billboard
 function Billboard.Inherit(name, custom_values) end
+
+---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/both.png" height="21"> <b>[Client/Server Side]</b>
+---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/base-classes/entity#static-function-getall">docs</a>
+---
+---Returns a table containing all Entities of the class this is called on
+---@return Billboard[] @Copy of table containing all Entities
+function Billboard.GetAll() end
+
+---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/both.png" height="21"> <b>[Client/Server Side]</b>
+---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/base-classes/entity#static-function-getpairs">docs</a>
+---
+---Returns an iterator with all Entities of this class to be used with <code>pairs()</code>. This is a more performant method than <code>GetAll()</code>, as it will return the iterator to access the Entities directly instead of creating and returning a copy of the Entities table.<br><br><b>Note:</b> Destroying Entities from inside a <code>GetPairs()</code> loop will cause the iterable to change size during the process. If you want to loop-and-destroy, please use <code>GetAll()</code>.
+---@return EntityIterator<Billboard> @Iterator with all Entities of this class
+function Billboard.GetPairs() end
 
 ---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/both.png" height="21"> <b>[Client/Server Side]</b>
 ---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/blueprint">docs</a>
@@ -648,6 +718,20 @@ function Blueprint:Constructor(location, rotation, blueprint_asset, collision_ty
 ---@param custom_values? table @An optional table with custom values to be set in the inherited class table (Default: {})
 ---@return Blueprint.Inherited @The new Class table, inheriting from Blueprint
 function Blueprint.Inherit(name, custom_values) end
+
+---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/both.png" height="21"> <b>[Client/Server Side]</b>
+---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/base-classes/entity#static-function-getall">docs</a>
+---
+---Returns a table containing all Entities of the class this is called on
+---@return Blueprint[] @Copy of table containing all Entities
+function Blueprint.GetAll() end
+
+---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/both.png" height="21"> <b>[Client/Server Side]</b>
+---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/base-classes/entity#static-function-getpairs">docs</a>
+---
+---Returns an iterator with all Entities of this class to be used with <code>pairs()</code>. This is a more performant method than <code>GetAll()</code>, as it will return the iterator to access the Entities directly instead of creating and returning a copy of the Entities table.<br><br><b>Note:</b> Destroying Entities from inside a <code>GetPairs()</code> loop will cause the iterable to change size during the process. If you want to loop-and-destroy, please use <code>GetAll()</code>.
+---@return EntityIterator<Blueprint> @Iterator with all Entities of this class
+function Blueprint.GetPairs() end
 
 ---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/client-only.png" height="21"> <b>[Client Side]</b>
 ---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/blueprint#function-bindblueprinteventdispatcher">docs</a>
@@ -723,6 +807,20 @@ function Cable:Constructor(location, enable_visuals, spawn_mode) end
 ---@return Cable.Inherited @The new Class table, inheriting from Cable
 function Cable.Inherit(name, custom_values) end
 
+---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/both.png" height="21"> <b>[Client/Server Side]</b>
+---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/base-classes/entity#static-function-getall">docs</a>
+---
+---Returns a table containing all Entities of the class this is called on
+---@return Cable[] @Copy of table containing all Entities
+function Cable.GetAll() end
+
+---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/both.png" height="21"> <b>[Client/Server Side]</b>
+---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/base-classes/entity#static-function-getpairs">docs</a>
+---
+---Returns an iterator with all Entities of this class to be used with <code>pairs()</code>. This is a more performant method than <code>GetAll()</code>, as it will return the iterator to access the Entities directly instead of creating and returning a copy of the Entities table.<br><br><b>Note:</b> Destroying Entities from inside a <code>GetPairs()</code> loop will cause the iterable to change size during the process. If you want to loop-and-destroy, please use <code>GetAll()</code>.
+---@return EntityIterator<Cable> @Iterator with all Entities of this class
+function Cable.GetPairs() end
+
 ---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/server-only.png" height="21"> <b>[Server Side]</b>
 ---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/cable#function-attachendto">docs</a>
 ---
@@ -769,6 +867,13 @@ function Cable:GetAttachedEndTo() end
 ---Gets the Actor attached to Start
 ---@return Actor? @Actor attached to Start
 function Cable:GetAttachedStartTo() end
+
+---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/both.png" height="21"> <b>[Client/Server Side]</b>
+---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/cable#function-isvisible">docs</a>
+---
+---Returns true if this cable is visible
+---@return boolean @Whether this cable is visible
+function Cable:IsVisible() end
 
 ---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/server-only.png" height="21"> <b>[Server Side]</b>
 ---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/cable#function-setangularlimits">docs</a>
@@ -890,6 +995,13 @@ function Cable:SetPhysicsConstraintSettings(disable_collision) end
 ---@param tile_material integer @How many times to repeat the material along the length of the cable. Default is 1
 function Cable:SetRenderingSettings(width, num_sides, tile_material) end
 
+---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/both.png" height="21"> <b>[Client/Server Side]</b>
+---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/cable#function-setvisibility">docs</a>
+---
+---Sets whether the cable is visible or not (visuals only, the constraint keeps working)
+---@param is_visible boolean @Whether the cable is visible or not
+function Cable:SetVisibility(is_visible) end
+
 ---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/client-only.png" height="21"> <b>[Client Side]</b>
 ---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/canvas">docs</a>
 ---<b>Constructors:</b> <a href="https://docs.nanos-world.com/docs/scripting-reference/classes/canvas#constructor-default-constructor">Default Constructor</a>
@@ -926,6 +1038,20 @@ function Canvas:Constructor(is_visible, clear_color, auto_repaint_rate, should_c
 ---@param custom_values? table @An optional table with custom values to be set in the inherited class table (Default: {})
 ---@return Canvas.Inherited @The new Class table, inheriting from Canvas
 function Canvas.Inherit(name, custom_values) end
+
+---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/both.png" height="21"> <b>[Client/Server Side]</b>
+---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/base-classes/entity#static-function-getall">docs</a>
+---
+---Returns a table containing all Entities of the class this is called on
+---@return Canvas[] @Copy of table containing all Entities
+function Canvas.GetAll() end
+
+---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/both.png" height="21"> <b>[Client/Server Side]</b>
+---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/base-classes/entity#static-function-getpairs">docs</a>
+---
+---Returns an iterator with all Entities of this class to be used with <code>pairs()</code>. This is a more performant method than <code>GetAll()</code>, as it will return the iterator to access the Entities directly instead of creating and returning a copy of the Entities table.<br><br><b>Note:</b> Destroying Entities from inside a <code>GetPairs()</code> loop will cause the iterable to change size during the process. If you want to loop-and-destroy, please use <code>GetAll()</code>.
+---@return EntityIterator<Canvas> @Iterator with all Entities of this class
+function Canvas.GetPairs() end
 
 ---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/client-only.png" height="21"> <b>[Client Side]</b>
 ---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/canvas#function-clear">docs</a>
@@ -1169,8 +1295,8 @@ Character = {}
 ---@param collision_type? CollisionType @Collision profile of this Actor (Default: CollisionType.Auto)
 ---@param gravity_enabled? boolean @Whether gravity affects this Actor (Default: true)
 ---@param max_health? integer @Current / Max Health (Default: 100)
----@param death_sound? string @Played when Character dies (Default: nanos-world::A_Male_01_Death)
----@param pain_sound? string @Played when Character takes damage (Default: nanos-world::A_Male_01_Pain)
+---@param death_sound? string @Played when Character dies, pass an empty string for no sound (Default: nanos-world::A_Male_01_Death)
+---@param pain_sound? string @Played when Character takes damage, pass an empty string for no sound (Default: nanos-world::A_Male_01_Pain)
 ---@param spawn_mode? SpawnMode @Pass <code>SpawnMode.AfterConstructor</code> or <code>SpawnMode.Manual</code> to avoid immediately sending the entity to clients and improve performance when you want to configure it by setting several configs. Must call <code>FinishSpawn()</code> after all (Default: SpawnMode.Immediate)
 function Character:Constructor(location, rotation, skeletal_mesh_asset, collision_type, gravity_enabled, max_health, death_sound, pain_sound, spawn_mode) end
 
@@ -1188,10 +1314,18 @@ function Character:Constructor(location, rotation, skeletal_mesh_asset, collisio
 function Character.Inherit(name, custom_values) end
 
 ---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/both.png" height="21"> <b>[Client/Server Side]</b>
----<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/character#function-clearmorphtargets">docs</a>
+---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/base-classes/entity#static-function-getall">docs</a>
 ---
----Clear all Morph Target that are set to this Mesh
-function Character:ClearMorphTargets() end
+---Returns a table containing all Entities of the class this is called on
+---@return Character[] @Copy of table containing all Entities
+function Character.GetAll() end
+
+---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/both.png" height="21"> <b>[Client/Server Side]</b>
+---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/base-classes/entity#static-function-getpairs">docs</a>
+---
+---Returns an iterator with all Entities of this class to be used with <code>pairs()</code>. This is a more performant method than <code>GetAll()</code>, as it will return the iterator to access the Entities directly instead of creating and returning a copy of the Entities table.<br><br><b>Note:</b> Destroying Entities from inside a <code>GetPairs()</code> loop will cause the iterable to change size during the process. If you want to loop-and-destroy, please use <code>GetAll()</code>.
+---@return EntityIterator<Character> @Iterator with all Entities of this class
+function Character.GetPairs() end
 
 ---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/server-only.png" height="21"> <b>[Server Side]</b>
 ---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/character#function-drop">docs</a>
@@ -1206,13 +1340,6 @@ function Character:Drop() end
 ---@param vehicle Vehicle @The Vehicle
 ---@param seat? integer @Seat index to enter, 0 is the driver seat (Default: 0)
 function Character:EnterVehicle(vehicle, seat) end
-
----<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/client-only.png" height="21"> <b>[Client Side]</b>
----<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/character#function-getallmorphtargetnames">docs</a>
----
----Returns a table with all morph targets available
----@return string[] @table with all morph targets available
-function Character:GetAllMorphTargetNames() end
 
 ---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/both.png" height="21"> <b>[Client/Server Side]</b>
 ---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/character#function-getcameramode">docs</a>
@@ -1327,14 +1454,6 @@ function Character:GetGrabbedProp() end
 function Character:GetImpactDamageTaken() end
 
 ---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/both.png" height="21"> <b>[Client/Server Side]</b>
----<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/character#function-getmorphtarget">docs</a>
----
----Returns the value of a Morph Target
----@param name string @Morph Target Name
----@return number @value of the Morph Target
-function Character:GetMorphTarget(name) end
-
----<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/both.png" height="21"> <b>[Client/Server Side]</b>
 ---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/character#function-getpicked">docs</a>
 ---
 ---Gets the Pickable if picking up
@@ -1375,13 +1494,6 @@ function Character:GetStanceMode() end
 ---Gets the Swimming Mode
 ---@return SwimmingMode @Swimming Mode
 function Character:GetSwimmingMode() end
-
----<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/both.png" height="21"> <b>[Client/Server Side]</b>
----<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/character#function-getteam">docs</a>
----
----Gets the Team of this Character
----@return integer @The Team, 0 means no team
-function Character:GetTeam() end
 
 ---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/both.png" height="21"> <b>[Client/Server Side]</b>
 ---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/character#function-getvehicle">docs</a>
@@ -1620,7 +1732,7 @@ function Character:SetCanUsePickables(can_use) end
 ---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/character#function-setdeathsound">docs</a>
 ---
 ---Changes the Death sound when Character dies
----@param sound_asset string @The new Death sound when Character dies
+---@param sound_asset? string @The new Death sound when Character dies, pass nil or an empty string for no sound (Default: nil)
 function Character:SetDeathSound(sound_asset) end
 
 ---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/server-only.png" height="21"> <b>[Server Side]</b>
@@ -1686,26 +1798,18 @@ function Character:SetInvulnerable(is_invulnerable) end
 ---@param skeletal_mesh_asset string @The new Skeletal Mesh asset
 function Character:SetMesh(skeletal_mesh_asset) end
 
----<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/both.png" height="21"> <b>[Client/Server Side]</b>
----<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/character#function-setmorphtarget">docs</a>
----
----Sets the value of a Morph Target
----@param name string @Morph Target Name
----@param value number @The Morph Target weight, usually from 0 to 1
-function Character:SetMorphTarget(name, value) end
-
 ---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/server-only.png" height="21"> <b>[Server Side]</b>
 ---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/character#function-setpainsound">docs</a>
 ---
 ---Changes the Pain sound when Character takes damage
----@param sound_asset string @The new Pain sound when Character takes damage
+---@param sound_asset? string @The new Pain sound when Character takes damage, pass nil or an empty string for no sound (Default: nil)
 function Character:SetPainSound(sound_asset) end
 
 ---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/server-only.png" height="21"> <b>[Server Side]</b>
 ---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/character#function-setparachutetexture">docs</a>
 ---
 ---Changes the texture of the Character's parachute
----@param texture string @The new Parachute Texture
+---@param texture? string @The new Parachute Texture, pass nil or an empty string to restore the default Texture (Default: nil)
 function Character:SetParachuteTexture(texture) end
 
 ---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/both.png" height="21"> <b>[Client/Server Side]</b>
@@ -1727,7 +1831,7 @@ function Character:SetPhysicalAnimationSettings(bone, include_self, is_local_sim
 ---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/character#function-setphysicsasset">docs</a>
 ---
 ---Sets the Physics Asset for the Character
----@param physics_asset string @The new Physics Asset for the Character
+---@param physics_asset? string @The new Physics Asset for the Character, pass nil or an empty string to restore the Mesh's own Physics Asset (Default: nil)
 function Character:SetPhysicsAsset(physics_asset) end
 
 ---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/server-only.png" height="21"> <b>[Server Side]</b>
@@ -1785,13 +1889,6 @@ function Character:SetSpeedMultiplier(speed_multiplier) end
 ---Sets the Stance Mode (standing, crouching or proning)
 ---@param stance_mode StanceMode @The new Stance Mode
 function Character:SetStanceMode(stance_mode) end
-
----<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/server-only.png" height="21"> <b>[Server Side]</b>
----<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/character#function-setteam">docs</a>
----
----Sets a Team which will disable damaging same Team Members
----@param team integer @0 is neutral and default
-function Character:SetTeam(team) end
 
 ---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/network-authority.png" height="21"> <b>[Network Authority]</b>
 ---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/character#function-setviewmode">docs</a>
@@ -2046,6 +2143,20 @@ function CharacterSimple:Constructor(location, rotation, mesh, custom_animation_
 ---@return CharacterSimple.Inherited @The new Class table, inheriting from CharacterSimple
 function CharacterSimple.Inherit(name, custom_values) end
 
+---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/both.png" height="21"> <b>[Client/Server Side]</b>
+---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/base-classes/entity#static-function-getall">docs</a>
+---
+---Returns a table containing all Entities of the class this is called on
+---@return CharacterSimple[] @Copy of table containing all Entities
+function CharacterSimple.GetAll() end
+
+---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/both.png" height="21"> <b>[Client/Server Side]</b>
+---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/base-classes/entity#static-function-getpairs">docs</a>
+---
+---Returns an iterator with all Entities of this class to be used with <code>pairs()</code>. This is a more performant method than <code>GetAll()</code>, as it will return the iterator to access the Entities directly instead of creating and returning a copy of the Entities table.<br><br><b>Note:</b> Destroying Entities from inside a <code>GetPairs()</code> loop will cause the iterable to change size during the process. If you want to loop-and-destroy, please use <code>GetAll()</code>.
+---@return EntityIterator<CharacterSimple> @Iterator with all Entities of this class
+function CharacterSimple.GetPairs() end
+
 ---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/client-only.png" height="21"> <b>[Client Side]</b>
 ---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/charactersimple#function-bindanimationblueprinteventdispatcher">docs</a>
 ---
@@ -2150,7 +2261,7 @@ function CharacterSimple:SetPawnSettings(use_controller_rotation_pitch, use_cont
 ---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/charactersimple#function-setphysicsasset">docs</a>
 ---
 ---Sets the Physics Asset for the Character
----@param physics_asset string @The new Physics Asset for the Character
+---@param physics_asset? string @The new Physics Asset for the Character, pass nil or an empty string to restore the Mesh's own Physics Asset (Default: nil)
 function CharacterSimple:SetPhysicsAsset(physics_asset) end
 
 ---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/authority-only.png" height="21"> <b>[Authority Side]</b>
@@ -2169,7 +2280,8 @@ function CharacterSimple:SetRotationSettings(rotation_rate, use_controller_desir
 ---@param max_walk_speed? integer @Max speed while walking (Default: 600)
 ---@param max_walk_speed_crouched? integer @Max speed while crouched (Default: 300)
 ---@param max_fly_speed? integer @Max speed while flying (Default: 600)
-function CharacterSimple:SetSpeedSettings(max_walk_speed, max_walk_speed_crouched, max_fly_speed) end
+---@param max_swim_speed? integer @Max speed while swimming (Default: 300)
+function CharacterSimple:SetSpeedSettings(max_walk_speed, max_walk_speed_crouched, max_fly_speed, max_swim_speed) end
 
 ---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/both.png" height="21"> <b>[Client/Server Side]</b>
 ---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/charactersimple#function-setspringarmsettings">docs</a>
@@ -2360,6 +2472,15 @@ function Chat.SetConfiguration(screen_location, size, anchors_min, anchors_max, 
 ---@param is_visible boolean @Whether the Chat is visible or not
 function Chat.SetVisibility(is_visible) end
 
+---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/server-only.png" height="21"> <b>[Server Side]</b>
+---<a href="https://docs.nanos-world.com/docs/scripting-reference/static-classes/chat#static-function-submit">docs</a>
+---
+---Submits a chat message as if the Player had typed it in the chat, also triggering the PlayerSubmit event
+---@param player Player @The player who is sending the message
+---@param message string @The message
+---@return boolean @false if a PlayerSubmit handler cancelled the message, true if it was broadcast
+function Chat.Submit(player, message) end
+
 
 
 ---Subscribe to an event
@@ -2489,7 +2610,7 @@ function Client.GetPackages(package_type_filter) end
 ---<a href="https://docs.nanos-world.com/docs/scripting-reference/static-classes/client#static-function-getsettings">docs</a>
 ---
 ---Gets the local player's game Settings
----@return { ToggleSprint: boolean, ToggleCrouch: boolean, ToggleAim: boolean, ToggleWalk: boolean, MouseSensitivity: number, AutoReAlignCamera: boolean, FOVCanChange: boolean, CameraBending: integer, EnableCustomLoadingScreen: boolean, VolumeMusic: integer, VolumeMenuMusic: integer, VolumeUI: integer, VolumeSFX: integer, VolumeAmbient: integer, VolumeOverall: integer, VolumeVoice: integer, PlaySoundInDesktop: boolean, Gamma: integer, MotionBlur: integer, FOV: integer, GameMaxFPS: integer, RayTracing: boolean, HardwareRayTracing: boolean, RHI: integer, BloodDecalQualityLevel: integer, AntiAliasingMethod: integer, ShadowMapMethod: integer, MegaLights: boolean, UpscalingMethod: integer, UpscalingQuality: integer, UpscalingSharpness: integer, FrameGenerationMethod: integer, LatencyReductionMethod: integer, DLSSFrameGenerationMode: integer, DLSSRayReconstruction: boolean, CEFSharedTexture: boolean, CEFUseHardwareAcceleration: boolean, CEFUseMessageLoopSchedule: boolean, CEFUseExternalBeginFrame: boolean, CEFMaxFrameRate: integer, CEFMaxResolution: integer, ScreenResolution: Vector2D, FullscreenMode: integer, VSync: boolean, ResolutionScale: number, OverallQuality: integer, ViewDistanceQuality: integer, ShadowQuality: integer, GlobalIlluminationQuality: integer, ReflectionQuality: integer, AntiAliasingQuality: integer, TextureQuality: integer, VisualEffectQuality: integer, PostProcessingQuality: integer, FoliageQuality: integer, ShadingQuality: integer } @the current Settings
+---@return { ToggleSprint: boolean, ToggleCrouch: boolean, ToggleAim: boolean, ToggleWalk: boolean, MouseSensitivity: number, AutoReAlignCamera: boolean, FOVCanChange: boolean, CameraBending: integer, EnableCustomLoadingScreen: boolean, VolumeMusic: integer, VolumeMenuMusic: integer, VolumeUI: integer, VolumeSFX: integer, VolumeAmbient: integer, VolumeOverall: integer, VolumeVoice: integer, VoicePushToTalk: boolean, PlaySoundInDesktop: boolean, PlayTypingSounds: boolean, Gamma: integer, MotionBlur: integer, FOV: integer, GameMaxFPS: integer, RayTracing: boolean, HardwareRayTracing: boolean, RHI: integer, BloodDecalQualityLevel: integer, AntiAliasingMethod: integer, ShadowMapMethod: integer, MegaLights: boolean, UpscalingMethod: integer, UpscalingQuality: integer, UpscalingSharpness: integer, FrameGenerationMethod: integer, LatencyReductionMethod: integer, DLSSFrameGenerationMode: integer, DLSSRayReconstruction: boolean, CEFSharedTexture: boolean, CEFUseHardwareAcceleration: boolean, CEFUseMessageLoopSchedule: boolean, CEFUseExternalBeginFrame: boolean, CEFMaxFrameRate: integer, CEFMaxResolution: integer, ScreenResolution: Vector2D, FullscreenMode: integer, VSync: boolean, ResolutionScale: number, OverallQuality: integer, ViewDistanceQuality: integer, ShadowQuality: integer, GlobalIlluminationQuality: integer, ReflectionQuality: integer, AntiAliasingQuality: integer, TextureQuality: integer, VisualEffectQuality: integer, PostProcessingQuality: integer, FoliageQuality: integer, ShadingQuality: integer } @the current Settings
 function Client.GetSettings() end
 
 ---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/client-only.png" height="21"> <b>[Client Side]</b>
@@ -2515,6 +2636,13 @@ function Client.GetValue(key, fallback) end
 ---@param package_name string @The package folder name
 ---@return boolean @if the package is loaded
 function Client.IsPackageLoaded(package_name) end
+
+---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/client-only.png" height="21"> <b>[Client Side]</b>
+---<a href="https://docs.nanos-world.com/docs/scripting-reference/static-classes/client#static-function-isvoipselfmuted">docs</a>
+---
+---Gets whether the local player has muted their own microphone. Only the player can change it, with the VOIP key when the Open Mic setting is on, or from the escape menu.
+---@return boolean @Whether the microphone is muted by the player
+function Client.IsVOIPSelfMuted() end
 
 ---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/client-only.png" height="21"> <b>[Client Side]</b>
 ---<a href="https://docs.nanos-world.com/docs/scripting-reference/static-classes/client#static-function-openescapemenu">docs</a>
@@ -2595,9 +2723,12 @@ function Client.ShowNotification(text, notification_type, add_to_notification_li
 ---@param callback function @Function to call when the event is triggered
 ---@return function @The callback function passed
 ---@overload fun(event_name: "LanguageChange", callback: fun(language: string)): fun(language: string) @Called when the Client language changes
+---@overload fun(event_name: "PackageLoad", callback: fun(package_name: string)): fun(package_name: string) @Triggered when any package is loaded
+---@overload fun(event_name: "PackageUnload", callback: fun(package_name: string)): fun(package_name: string) @Triggered when any package is unloaded
 ---@overload fun(event_name: "SpawnLocalPlayer", callback: fun(local_player: Player)): fun(local_player: Player) @Called when the local player spawns (just after the game has loaded)
 ---@overload fun(event_name: "Tick", callback: fun(delta_time: number)): fun(delta_time: number) @Called Every Frame. Do not abuse
 ---@overload fun(event_name: "ValueChange", callback: fun(key: string, value: any)): fun(key: string, value: any) @Triggered when a Value is changed with <code>Client.SetValue()</code> or <code>Server.SetValue()</code> (for synced values)
+---@overload fun(event_name: "VOIPSelfMuteChange", callback: fun(is_muted: boolean)): fun(is_muted: boolean) @Called when the local player mutes or unmutes their own microphone, either with the VOIP key (on Open Mic) or from the escape menu
 ---@overload fun(event_name: "WindowFocusChange", callback: fun(is_focused: boolean)): fun(is_focused: boolean) @Called when the game is focused/unfocused
 function Client.Subscribe(event_name, callback) end
 
@@ -2605,9 +2736,12 @@ function Client.Subscribe(event_name, callback) end
 ---@param event_name string @Name of the event to unsubscribe from
 ---@param callback? function @Optional callback to unsubscribe (if no callback is passed then all callbacks in this Package will be unsubscribed from this event)
 ---@overload fun(event_name: "LanguageChange", callback: fun(language: string)) @Called when the Client language changes
+---@overload fun(event_name: "PackageLoad", callback: fun(package_name: string)) @Triggered when any package is loaded
+---@overload fun(event_name: "PackageUnload", callback: fun(package_name: string)) @Triggered when any package is unloaded
 ---@overload fun(event_name: "SpawnLocalPlayer", callback: fun(local_player: Player)) @Called when the local player spawns (just after the game has loaded)
 ---@overload fun(event_name: "Tick", callback: fun(delta_time: number)) @Called Every Frame. Do not abuse
 ---@overload fun(event_name: "ValueChange", callback: fun(key: string, value: any)) @Triggered when a Value is changed with <code>Client.SetValue()</code> or <code>Server.SetValue()</code> (for synced values)
+---@overload fun(event_name: "VOIPSelfMuteChange", callback: fun(is_muted: boolean)) @Called when the local player mutes or unmutes their own microphone, either with the VOIP key (on Open Mic) or from the escape menu
 ---@overload fun(event_name: "WindowFocusChange", callback: fun(is_focused: boolean)) @Called when the game is focused/unfocused
 function Client.Unsubscribe(event_name, callback) end
 
@@ -2814,6 +2948,20 @@ Damageable = {}
 ---@param custom_values? table @An optional table with custom values to be set in the inherited class table (Default: {})
 ---@return Damageable.Inherited @The new Class table, inheriting from Damageable
 function Damageable.Inherit(name, custom_values) end
+
+---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/both.png" height="21"> <b>[Client/Server Side]</b>
+---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/base-classes/entity#static-function-getall">docs</a>
+---
+---Returns a table containing all Entities of the class this is called on
+---@return Damageable[] @Copy of table containing all Entities
+function Damageable.GetAll() end
+
+---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/both.png" height="21"> <b>[Client/Server Side]</b>
+---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/base-classes/entity#static-function-getpairs">docs</a>
+---
+---Returns an iterator with all Entities of this class to be used with <code>pairs()</code>. This is a more performant method than <code>GetAll()</code>, as it will return the iterator to access the Entities directly instead of creating and returning a copy of the Entities table.<br><br><b>Note:</b> Destroying Entities from inside a <code>GetPairs()</code> loop will cause the iterable to change size during the process. If you want to loop-and-destroy, please use <code>GetAll()</code>.
+---@return EntityIterator<Damageable> @Iterator with all Entities of this class
+function Damageable.GetPairs() end
 
 ---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/server-only.png" height="21"> <b>[Server Side]</b>
 ---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/base-classes/damageable#function-applydamage">docs</a>
@@ -3174,6 +3322,20 @@ function Decal:Constructor(location, rotation, material_asset, size, lifespan, f
 ---@return Decal.Inherited @The new Class table, inheriting from Decal
 function Decal.Inherit(name, custom_values) end
 
+---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/both.png" height="21"> <b>[Client/Server Side]</b>
+---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/base-classes/entity#static-function-getall">docs</a>
+---
+---Returns a table containing all Entities of the class this is called on
+---@return Decal[] @Copy of table containing all Entities
+function Decal.GetAll() end
+
+---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/both.png" height="21"> <b>[Client/Server Side]</b>
+---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/base-classes/entity#static-function-getpairs">docs</a>
+---
+---Returns an iterator with all Entities of this class to be used with <code>pairs()</code>. This is a more performant method than <code>GetAll()</code>, as it will return the iterator to access the Entities directly instead of creating and returning a copy of the Entities table.<br><br><b>Note:</b> Destroying Entities from inside a <code>GetPairs()</code> loop will cause the iterable to change size during the process. If you want to loop-and-destroy, please use <code>GetAll()</code>.
+---@return EntityIterator<Decal> @Iterator with all Entities of this class
+function Decal.GetPairs() end
+
 ---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/authority-only.png" height="21"> <b>[Authority Side]</b>
 ---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/decal#function-setfadein">docs</a>
 ---
@@ -3252,6 +3414,13 @@ function Entity.Inherit(name, custom_values) end
 function Entity.GetAll() end
 
 ---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/both.png" height="21"> <b>[Client/Server Side]</b>
+---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/base-classes/entity#static-function-getpairs">docs</a>
+---
+---Returns an iterator with all Entities of this class to be used with <code>pairs()</code>. This is a more performant method than <code>GetAll()</code>, as it will return the iterator to access the Entities directly instead of creating and returning a copy of the Entities table.<br><br><b>Note:</b> Destroying Entities from inside a <code>GetPairs()</code> loop will cause the iterable to change size during the process. If you want to loop-and-destroy, please use <code>GetAll()</code>.
+---@return EntityIterator<Entity> @Iterator with all Entities of this class
+function Entity.GetPairs() end
+
+---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/both.png" height="21"> <b>[Client/Server Side]</b>
 ---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/base-classes/entity#static-function-getbyindex">docs</a>
 ---
 ---Returns a specific Entity of this class at an index
@@ -3273,13 +3442,6 @@ function Entity.GetCount() end
 ---@param recursively? boolean @Returns all inherited children (Default: false)
 ---@return table[] @All children Classes
 function Entity.GetInheritedClasses(recursively) end
-
----<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/both.png" height="21"> <b>[Client/Server Side]</b>
----<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/base-classes/entity#static-function-getpairs">docs</a>
----
----Returns an iterator with all Entities of this class to be used with <code>pairs()</code>. This is a more performant method than <code>GetAll()</code>, as it will return the iterator to access the Entities directly instead of creating and returning a copy of the Entities table.<br><br><b>Note:</b> Destroying Entities from inside a <code>GetPairs()</code> loop will cause the iterable to change size during the process. If you want to loop-and-destroy, please use <code>GetAll()</code>.
----@return iterator @Iterator with all Entities of this class
-function Entity.GetPairs() end
 
 ---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/both.png" height="21"> <b>[Client/Server Side]</b>
 ---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/base-classes/entity#static-function-getparentclass">docs</a>
@@ -3853,6 +4015,20 @@ function Gizmo:Constructor() end
 ---@return Gizmo.Inherited @The new Class table, inheriting from Gizmo
 function Gizmo.Inherit(name, custom_values) end
 
+---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/both.png" height="21"> <b>[Client/Server Side]</b>
+---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/base-classes/entity#static-function-getall">docs</a>
+---
+---Returns a table containing all Entities of the class this is called on
+---@return Gizmo[] @Copy of table containing all Entities
+function Gizmo.GetAll() end
+
+---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/both.png" height="21"> <b>[Client/Server Side]</b>
+---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/base-classes/entity#static-function-getpairs">docs</a>
+---
+---Returns an iterator with all Entities of this class to be used with <code>pairs()</code>. This is a more performant method than <code>GetAll()</code>, as it will return the iterator to access the Entities directly instead of creating and returning a copy of the Entities table.<br><br><b>Note:</b> Destroying Entities from inside a <code>GetPairs()</code> loop will cause the iterable to change size during the process. If you want to loop-and-destroy, please use <code>GetAll()</code>.
+---@return EntityIterator<Gizmo> @Iterator with all Entities of this class
+function Gizmo.GetPairs() end
+
 ---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/client-only.png" height="21"> <b>[Client Side]</b>
 ---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/gizmo#function-activate">docs</a>
 ---
@@ -4009,6 +4185,20 @@ function Grenade:Constructor(location, rotation, static_mesh_asset, explosion_pa
 ---@param custom_values? table @An optional table with custom values to be set in the inherited class table (Default: {})
 ---@return Grenade.Inherited @The new Class table, inheriting from Grenade
 function Grenade.Inherit(name, custom_values) end
+
+---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/both.png" height="21"> <b>[Client/Server Side]</b>
+---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/base-classes/entity#static-function-getall">docs</a>
+---
+---Returns a table containing all Entities of the class this is called on
+---@return Grenade[] @Copy of table containing all Entities
+function Grenade.GetAll() end
+
+---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/both.png" height="21"> <b>[Client/Server Side]</b>
+---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/base-classes/entity#static-function-getpairs">docs</a>
+---
+---Returns an iterator with all Entities of this class to be used with <code>pairs()</code>. This is a more performant method than <code>GetAll()</code>, as it will return the iterator to access the Entities directly instead of creating and returning a copy of the Entities table.<br><br><b>Note:</b> Destroying Entities from inside a <code>GetPairs()</code> loop will cause the iterable to change size during the process. If you want to loop-and-destroy, please use <code>GetAll()</code>.
+---@return EntityIterator<Grenade> @Iterator with all Entities of this class
+function Grenade.GetPairs() end
 
 ---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/server-only.png" height="21"> <b>[Server Side]</b>
 ---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/grenade#function-explode">docs</a>
@@ -4464,6 +4654,20 @@ function InstancedStaticMesh:Constructor(location, rotation, static_mesh_asset, 
 ---@return InstancedStaticMesh.Inherited @The new Class table, inheriting from InstancedStaticMesh
 function InstancedStaticMesh.Inherit(name, custom_values) end
 
+---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/both.png" height="21"> <b>[Client/Server Side]</b>
+---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/base-classes/entity#static-function-getall">docs</a>
+---
+---Returns a table containing all Entities of the class this is called on
+---@return InstancedStaticMesh[] @Copy of table containing all Entities
+function InstancedStaticMesh.GetAll() end
+
+---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/both.png" height="21"> <b>[Client/Server Side]</b>
+---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/base-classes/entity#static-function-getpairs">docs</a>
+---
+---Returns an iterator with all Entities of this class to be used with <code>pairs()</code>. This is a more performant method than <code>GetAll()</code>, as it will return the iterator to access the Entities directly instead of creating and returning a copy of the Entities table.<br><br><b>Note:</b> Destroying Entities from inside a <code>GetPairs()</code> loop will cause the iterable to change size during the process. If you want to loop-and-destroy, please use <code>GetAll()</code>.
+---@return EntityIterator<InstancedStaticMesh> @Iterator with all Entities of this class
+function InstancedStaticMesh.GetPairs() end
+
 ---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/authority-only.png" height="21"> <b>[Authority Side]</b>
 ---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/instancedstaticmesh#function-addinstance">docs</a>
 ---
@@ -4670,6 +4874,20 @@ function Light:Constructor(location, rotation, color, light_type, intensity, att
 function Light.Inherit(name, custom_values) end
 
 ---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/both.png" height="21"> <b>[Client/Server Side]</b>
+---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/base-classes/entity#static-function-getall">docs</a>
+---
+---Returns a table containing all Entities of the class this is called on
+---@return Light[] @Copy of table containing all Entities
+function Light.GetAll() end
+
+---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/both.png" height="21"> <b>[Client/Server Side]</b>
+---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/base-classes/entity#static-function-getpairs">docs</a>
+---
+---Returns an iterator with all Entities of this class to be used with <code>pairs()</code>. This is a more performant method than <code>GetAll()</code>, as it will return the iterator to access the Entities directly instead of creating and returning a copy of the Entities table.<br><br><b>Note:</b> Destroying Entities from inside a <code>GetPairs()</code> loop will cause the iterable to change size during the process. If you want to loop-and-destroy, please use <code>GetAll()</code>.
+---@return EntityIterator<Light> @Iterator with all Entities of this class
+function Light.GetPairs() end
+
+---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/both.png" height="21"> <b>[Client/Server Side]</b>
 ---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/light#function-getattenuationradius">docs</a>
 ---
 ---Gets the distance this Light reaches
@@ -4794,6 +5012,20 @@ function Melee:Constructor(location, rotation, asset, collision_type, gravity_en
 ---@return Melee.Inherited @The new Class table, inheriting from Melee
 function Melee.Inherit(name, custom_values) end
 
+---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/both.png" height="21"> <b>[Client/Server Side]</b>
+---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/base-classes/entity#static-function-getall">docs</a>
+---
+---Returns a table containing all Entities of the class this is called on
+---@return Melee[] @Copy of table containing all Entities
+function Melee.GetAll() end
+
+---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/both.png" height="21"> <b>[Client/Server Side]</b>
+---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/base-classes/entity#static-function-getpairs">docs</a>
+---
+---Returns an iterator with all Entities of this class to be used with <code>pairs()</code>. This is a more performant method than <code>GetAll()</code>, as it will return the iterator to access the Entities directly instead of creating and returning a copy of the Entities table.<br><br><b>Note:</b> Destroying Entities from inside a <code>GetPairs()</code> loop will cause the iterable to change size during the process. If you want to loop-and-destroy, please use <code>GetAll()</code>.
+---@return EntityIterator<Melee> @Iterator with all Entities of this class
+function Melee.GetPairs() end
+
 ---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/server-only.png" height="21"> <b>[Server Side]</b>
 ---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/melee#function-addanimationcharacteruse">docs</a>
 ---
@@ -4864,7 +5096,7 @@ function Melee:SetDamageSettings(damage_start_time, damage_duration_time) end
 ---
 ---Sets the Sound when hitting something
 ---@param surface_type SurfaceType @The surface to apply the sound. Use <code>SurfaceType.Default</code> to be the default to all non defined surfaces. Note: Surfaces <b>Water</b> and <b>Flesh</b> already have default sounds and must be explicitly overridden
----@param asset_path string @The Sound used when attacking
+---@param asset_path? string @The Sound used when attacking, pass nil or an empty string for no sound (Default: nil)
 ---@param volume? number @Volume multiplier (Default: 1.0)
 ---@param pitch? number @Pitch multiplier (Default: 1.0)
 function Melee:SetImpactSound(surface_type, asset_path, volume, pitch) end
@@ -4873,7 +5105,7 @@ function Melee:SetImpactSound(surface_type, asset_path, volume, pitch) end
 ---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/melee#function-setsounduse">docs</a>
 ---
 ---Sets the Sound when attacking
----@param asset_path string @The Sound used when attacking
+---@param asset_path? string @The Sound used when attacking, pass nil or an empty string for no sound (Default: nil)
 function Melee:SetSoundUse(asset_path) end
 
 
@@ -5329,6 +5561,20 @@ Paintable = {}
 function Paintable.Inherit(name, custom_values) end
 
 ---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/both.png" height="21"> <b>[Client/Server Side]</b>
+---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/base-classes/entity#static-function-getall">docs</a>
+---
+---Returns a table containing all Entities of the class this is called on
+---@return Paintable[] @Copy of table containing all Entities
+function Paintable.GetAll() end
+
+---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/both.png" height="21"> <b>[Client/Server Side]</b>
+---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/base-classes/entity#static-function-getpairs">docs</a>
+---
+---Returns an iterator with all Entities of this class to be used with <code>pairs()</code>. This is a more performant method than <code>GetAll()</code>, as it will return the iterator to access the Entities directly instead of creating and returning a copy of the Entities table.<br><br><b>Note:</b> Destroying Entities from inside a <code>GetPairs()</code> loop will cause the iterable to change size during the process. If you want to loop-and-destroy, please use <code>GetAll()</code>.
+---@return EntityIterator<Paintable> @Iterator with all Entities of this class
+function Paintable.GetPairs() end
+
+---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/both.png" height="21"> <b>[Client/Server Side]</b>
 ---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/base-classes/paintable#function-getmaterialcolorparameter">docs</a>
 ---
 ---Gets a Color parameter from this Actor's material
@@ -5401,7 +5647,8 @@ function Paintable:SetMaterialColorParameter(parameter_name, color, index, attac
 ---Sets the material at the specified index of this Actor to a Canvas object
 ---@param canvas Canvas @The Canvas object to use as a material
 ---@param index? integer @The material index to apply (<code>-1</code> means all indices) (Default: -1)
-function Paintable:SetMaterialFromCanvas(canvas, index) end
+---@param attachable_id? string @The attachable ID (set with <code>AddSkeletalMeshAttached</code> or <code>AddStaticMeshAttached</code>) to apply the material. Pass empty to set on main mesh only (Default: "")
+function Paintable:SetMaterialFromCanvas(canvas, index, attachable_id) end
 
 ---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/client-only.png" height="21"> <b>[Client Side]</b>
 ---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/base-classes/paintable#function-setmaterialfromscenecapture">docs</a>
@@ -5409,7 +5656,8 @@ function Paintable:SetMaterialFromCanvas(canvas, index) end
 ---Sets the material at the specified index of this Actor to a SceneCapture object
 ---@param scene_capture SceneCapture @The SceneCapture object to use as a material
 ---@param index? integer @The material index to apply (<code>-1</code> means all indices) (Default: -1)
-function Paintable:SetMaterialFromSceneCapture(scene_capture, index) end
+---@param attachable_id? string @The attachable ID (set with <code>AddSkeletalMeshAttached</code> or <code>AddStaticMeshAttached</code>) to apply the material. Pass empty to set on main mesh only (Default: "")
+function Paintable:SetMaterialFromSceneCapture(scene_capture, index, attachable_id) end
 
 ---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/client-only.png" height="21"> <b>[Client Side]</b>
 ---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/base-classes/paintable#function-setmaterialfromwebui">docs</a>
@@ -5417,7 +5665,8 @@ function Paintable:SetMaterialFromSceneCapture(scene_capture, index) end
 ---Sets the material at the specified index of this Actor to a WebUI object
 ---@param webui WebUI @The WebUI object to use as a material
 ---@param index? integer @The material index to apply (<code>-1</code> means all indices) (Default: -1)
-function Paintable:SetMaterialFromWebUI(webui, index) end
+---@param attachable_id? string @The attachable ID (set with <code>AddSkeletalMeshAttached</code> or <code>AddStaticMeshAttached</code>) to apply the material. Pass empty to set on main mesh only (Default: "")
+function Paintable:SetMaterialFromWebUI(webui, index, attachable_id) end
 
 ---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/both.png" height="21"> <b>[Client/Server Side]</b>
 ---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/base-classes/paintable#function-setmaterialscalarparameter">docs</a>
@@ -5434,7 +5683,7 @@ function Paintable:SetMaterialScalarParameter(parameter_name, scalar, index, att
 ---
 ---Sets a texture parameter in this Actor's material to an image
 ---@param parameter_name string @The name of the material parameter
----@param texture_path string @The path to texture, a url or a base64
+---@param texture_path string @The path to texture, a url or a base64. Files on disk are reloaded if overwritten since the last load
 ---@param index? integer @The material index to apply (<code>-1</code> means all indices) (Default: -1)
 ---@param attachable_id? string @The attachable ID (set with <code>AddSkeletalMeshAttached</code> or <code>AddStaticMeshAttached</code>) to apply the material parameter. Pass empty to set on main mesh only (Default: "")
 function Paintable:SetMaterialTextureParameter(parameter_name, texture_path, index, attachable_id) end
@@ -5490,6 +5739,20 @@ function Particle:Constructor(location, rotation, asset, auto_destroy, auto_acti
 ---@param custom_values? table @An optional table with custom values to be set in the inherited class table (Default: {})
 ---@return Particle.Inherited @The new Class table, inheriting from Particle
 function Particle.Inherit(name, custom_values) end
+
+---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/both.png" height="21"> <b>[Client/Server Side]</b>
+---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/base-classes/entity#static-function-getall">docs</a>
+---
+---Returns a table containing all Entities of the class this is called on
+---@return Particle[] @Copy of table containing all Entities
+function Particle.GetAll() end
+
+---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/both.png" height="21"> <b>[Client/Server Side]</b>
+---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/base-classes/entity#static-function-getpairs">docs</a>
+---
+---Returns an iterator with all Entities of this class to be used with <code>pairs()</code>. This is a more performant method than <code>GetAll()</code>, as it will return the iterator to access the Entities directly instead of creating and returning a copy of the Entities table.<br><br><b>Note:</b> Destroying Entities from inside a <code>GetPairs()</code> loop will cause the iterable to change size during the process. If you want to loop-and-destroy, please use <code>GetAll()</code>.
+---@return EntityIterator<Particle> @Iterator with all Entities of this class
+function Particle.GetPairs() end
 
 ---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/both.png" height="21"> <b>[Client/Server Side]</b>
 ---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/particle#function-activate">docs</a>
@@ -5605,6 +5868,20 @@ Pawn = {}
 function Pawn.Inherit(name, custom_values) end
 
 ---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/both.png" height="21"> <b>[Client/Server Side]</b>
+---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/base-classes/entity#static-function-getall">docs</a>
+---
+---Returns a table containing all Entities of the class this is called on
+---@return Pawn[] @Copy of table containing all Entities
+function Pawn.GetAll() end
+
+---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/both.png" height="21"> <b>[Client/Server Side]</b>
+---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/base-classes/entity#static-function-getpairs">docs</a>
+---
+---Returns an iterator with all Entities of this class to be used with <code>pairs()</code>. This is a more performant method than <code>GetAll()</code>, as it will return the iterator to access the Entities directly instead of creating and returning a copy of the Entities table.<br><br><b>Note:</b> Destroying Entities from inside a <code>GetPairs()</code> loop will cause the iterable to change size during the process. If you want to loop-and-destroy, please use <code>GetAll()</code>.
+---@return EntityIterator<Pawn> @Iterator with all Entities of this class
+function Pawn.GetPairs() end
+
+---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/both.png" height="21"> <b>[Client/Server Side]</b>
 ---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/base-classes/pawn#function-addskeletalmeshattached">docs</a>
 ---
 ---Spawns and attaches a SkeletalMesh to this entity, the SkeletalMesh must have the same skeleton used by this Actor's mesh, and will follow all animations from it. Uses a custom ID to be used for removing/customizing it afterwards
@@ -5632,6 +5909,12 @@ function Pawn:AddSkeletalMeshAttached(id, skeletal_mesh_path, socket, relative_l
 ---@param attachable_id? string @Optionally attaches this to another attached static mesh (instead of attaching to the root component) (Default: "")
 function Pawn:AddStaticMeshAttached(id, static_mesh_path, socket, relative_location, relative_rotation, use_parent_bounds, attachable_id) end
 
+---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/both.png" height="21"> <b>[Client/Server Side]</b>
+---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/base-classes/pawn#function-clearmorphtargets">docs</a>
+---
+---Clears all Morph Targets set on this Pawn's Mesh
+function Pawn:ClearMorphTargets() end
+
 ---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/authority-only.png" height="21"> <b>[Authority Side]</b>
 ---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/base-classes/pawn#function-follow">docs</a>
 ---
@@ -5642,6 +5925,13 @@ function Pawn:AddStaticMeshAttached(id, static_mesh_path, socket, relative_locat
 ---@param stop_on_fail? boolean @Whether to stop when failed to reach the target (Default: false)
 ---@param update_rate? number @How often to recalculate the AI path (Default: 0.25)
 function Pawn:Follow(actor, acceptance_radius, stop_on_succeed, stop_on_fail, update_rate) end
+
+---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/client-only.png" height="21"> <b>[Client Side]</b>
+---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/base-classes/pawn#function-getallmorphtargetnames">docs</a>
+---
+---Returns an empty table if the mesh is not a Skeletal Mesh (CharacterSimple may use a Static Mesh)
+---@return string[] @table with all morph targets available
+function Pawn:GetAllMorphTargetNames() end
 
 ---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/both.png" height="21"> <b>[Client/Server Side]</b>
 ---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/base-classes/pawn#function-getallskeletalmeshattached">docs</a>
@@ -5714,6 +6004,14 @@ function Pawn:GetJumpZVelocity() end
 function Pawn:GetMesh() end
 
 ---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/both.png" height="21"> <b>[Client/Server Side]</b>
+---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/base-classes/pawn#function-getmorphtarget">docs</a>
+---
+---Returns the value of a Morph Target
+---@param name string @Morph Target Name
+---@return number @value of the Morph Target
+function Pawn:GetMorphTarget(name) end
+
+---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/both.png" height="21"> <b>[Client/Server Side]</b>
 ---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/base-classes/pawn#function-getmovingto">docs</a>
 ---
 ---Gets the Moving To location
@@ -5726,6 +6024,13 @@ function Pawn:GetMovingTo() end
 ---Gets the possessing Player
 ---@return Player? @Possessing Player
 function Pawn:GetPlayer() end
+
+---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/both.png" height="21"> <b>[Client/Server Side]</b>
+---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/base-classes/pawn#function-getteam">docs</a>
+---
+---Gets the Team of this Pawn
+---@return integer @The Team, 0 means no team
+function Pawn:GetTeam() end
 
 ---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/both.png" height="21"> <b>[Client/Server Side]</b>
 ---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/base-classes/pawn#function-hidebone">docs</a>
@@ -5751,7 +6056,7 @@ function Pawn:Jump() end
 ---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/authority-only.png" height="21"> <b>[Authority Side]</b>
 ---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/base-classes/pawn#function-moveto">docs</a>
 ---
----AI: Makes this Pawn walk to the Location<br/><br/>Triggers event <a href='/docs/scripting-reference/classes/base-classes/pawn#event-movecomplete'>MoveComplete</a>
+---AI: Makes this Pawn walk to the Location<br/><br/>While in flying mode (see SetFlyingMode) it flies there in a straight line instead of following the navmesh, so the Location can be in the air<br/><br/>Triggers event <a href='/docs/scripting-reference/classes/base-classes/pawn#event-movecomplete'>MoveComplete</a>
 ---@param location Vector @The destination
 ---@param acceptance_radius? number @Distance from the destination considered as arrived (Default: 50)
 function Pawn:MoveTo(location, acceptance_radius) end
@@ -5789,6 +6094,13 @@ function Pawn:RemoveStaticMeshAttached(id) end
 ---@param enabled boolean @Whether to enable the RVO Avoidance
 ---@param avoidance_consideration_radius? integer @The radius of the circle used to determine the avoidance distance (Default: 300)
 function Pawn:SetAIAvoidanceSettings(enabled, avoidance_consideration_radius) end
+
+---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/authority-only.png" height="21"> <b>[Authority Side]</b>
+---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/base-classes/pawn#function-setaistopwithbraking">docs</a>
+---
+---AI: Sets whether the AI brakes to a stop when finishing a movement, instead of stopping instantly<br/><br/>When enabled, the Pawn keeps its velocity when it reaches the destination and slows down using its own braking settings (see Character:SetBrakingSettings and CharacterSimple:SetBrakingSettings), so it may stop slightly past the acceptance radius. Disabled by default
+---@param enabled boolean @Whether to brake to a stop
+function Pawn:SetAIStopWithBraking(enabled) end
 
 ---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/authority-only.png" height="21"> <b>[Authority Side]</b>
 ---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/base-classes/pawn#function-setbrakingsettings">docs</a>
@@ -5869,6 +6181,14 @@ function Pawn:SetJumpZVelocity(jump_z_velocity) end
 ---@param is_visible? boolean @Whether the mesh is visible (useful for using retargeters using child meshes) (Default: true)
 function Pawn:SetMeshSettings(relative_location, relative_rotation, is_visible) end
 
+---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/both.png" height="21"> <b>[Client/Server Side]</b>
+---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/base-classes/pawn#function-setmorphtarget">docs</a>
+---
+---Sets the value of a Morph Target
+---@param name string @Morph Target Name
+---@param value number @The Morph Target weight, usually from 0 to 1
+function Pawn:SetMorphTarget(name, value) end
+
 ---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/server-only.png" height="21"> <b>[Server Side]</b>
 ---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/base-classes/pawn#function-setragdollondeathenabled">docs</a>
 ---
@@ -5885,6 +6205,13 @@ function Pawn:SetRagdollOnDeathEnabled(is_enabled) end
 ---@param relative_rotation Rotator @New relative rotation
 function Pawn:SetStaticMeshAttachedTransform(id, relative_location, relative_rotation) end
 
+---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/authority-only.png" height="21"> <b>[Authority Side]</b>
+---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/base-classes/pawn#function-setteam">docs</a>
+---
+---Sets a Team which will disable damaging same Team Members
+---@param team integer @0 is neutral and default
+function Pawn:SetTeam(team) end
+
 ---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/both.png" height="21"> <b>[Client/Server Side]</b>
 ---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/base-classes/pawn#function-stopanimation">docs</a>
 ---
@@ -5895,9 +6222,8 @@ function Pawn:StopAnimation(animation_asset) end
 ---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/authority-only.png" height="21"> <b>[Authority Side]</b>
 ---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/base-classes/pawn#function-stopmovement">docs</a>
 ---
----AI: Stops the movement, optionally zeroing the velocity as well (stops even for non AI)<br/><br/>Triggers event <a href='/docs/scripting-reference/classes/base-classes/pawn#event-movecomplete'>MoveComplete</a>
----@param stops_velocity? boolean @Also stops the Pawn's current velocity (Default: false)
-function Pawn:StopMovement(stops_velocity) end
+---AI: Stops MoveTo and Follow navigation.<br/><br/>Triggers event <a href='/docs/scripting-reference/classes/base-classes/pawn#event-movecomplete'>MoveComplete</a>
+function Pawn:StopMovement() end
 
 ---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/both.png" height="21"> <b>[Client/Server Side]</b>
 ---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/base-classes/pawn#function-unhidebone">docs</a>
@@ -6020,6 +6346,20 @@ Pickable = {}
 ---@param custom_values? table @An optional table with custom values to be set in the inherited class table (Default: {})
 ---@return Pickable.Inherited @The new Class table, inheriting from Pickable
 function Pickable.Inherit(name, custom_values) end
+
+---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/both.png" height="21"> <b>[Client/Server Side]</b>
+---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/base-classes/entity#static-function-getall">docs</a>
+---
+---Returns a table containing all Entities of the class this is called on
+---@return Pickable[] @Copy of table containing all Entities
+function Pickable.GetAll() end
+
+---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/both.png" height="21"> <b>[Client/Server Side]</b>
+---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/base-classes/entity#static-function-getpairs">docs</a>
+---
+---Returns an iterator with all Entities of this class to be used with <code>pairs()</code>. This is a more performant method than <code>GetAll()</code>, as it will return the iterator to access the Entities directly instead of creating and returning a copy of the Entities table.<br><br><b>Note:</b> Destroying Entities from inside a <code>GetPairs()</code> loop will cause the iterable to change size during the process. If you want to loop-and-destroy, please use <code>GetAll()</code>.
+---@return EntityIterator<Pickable> @Iterator with all Entities of this class
+function Pickable.GetPairs() end
 
 ---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/both.png" height="21"> <b>[Client/Server Side]</b>
 ---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/base-classes/pickable#function-addskeletalmeshattached">docs</a>
@@ -6160,7 +6500,7 @@ function Pickable:SetCanUse(can_use) end
 ---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/base-classes/pickable#function-setcrosshairmaterial">docs</a>
 ---
 ---Sets the crosshair material for this Pickable
----@param material_asset string @Asset path to the crosshair material
+---@param material_asset? string @Asset path to the crosshair material, pass nil or an empty string for no crosshair (Default: nil)
 function Pickable:SetCrosshairMaterial(material_asset) end
 
 ---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/server-only.png" height="21"> <b>[Server Side]</b>
@@ -6281,6 +6621,20 @@ Player = {}
 ---@param custom_values? table @An optional table with custom values to be set in the inherited class table (Default: {})
 ---@return Player.Inherited @The new Class table, inheriting from Player
 function Player.Inherit(name, custom_values) end
+
+---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/both.png" height="21"> <b>[Client/Server Side]</b>
+---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/base-classes/entity#static-function-getall">docs</a>
+---
+---Returns a table containing all Entities of the class this is called on
+---@return Player[] @Copy of table containing all Entities
+function Player.GetAll() end
+
+---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/both.png" height="21"> <b>[Client/Server Side]</b>
+---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/base-classes/entity#static-function-getpairs">docs</a>
+---
+---Returns an iterator with all Entities of this class to be used with <code>pairs()</code>. This is a more performant method than <code>GetAll()</code>, as it will return the iterator to access the Entities directly instead of creating and returning a copy of the Entities table.<br><br><b>Note:</b> Destroying Entities from inside a <code>GetPairs()</code> loop will cause the iterable to change size during the process. If you want to loop-and-destroy, please use <code>GetAll()</code>.
+---@return EntityIterator<Player> @Iterator with all Entities of this class
+function Player.GetPairs() end
 
 ---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/server-only.png" height="21"> <b>[Server Side]</b>
 ---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/player#static-function-getbysteamid">docs</a>
@@ -6601,7 +6955,7 @@ function Player:SetVOIPLocalVolume(volume) end
 ---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/both.png" height="21"> <b>[Client/Server Side]</b>
 ---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/player#function-setvoipmuted">docs</a>
 ---
----Mutes or unmutes VOIP for this player
+---Mutes or unmutes VOIP for this player.<br/><br/>On server side, the player is muted for everyone. On client side, it is a local mute only.
 ---@param is_muted boolean @Whether VOIP is muted
 function Player:SetVOIPMuted(is_muted) end
 
@@ -6862,6 +7216,20 @@ function Prop:Constructor(location, rotation, asset, collision_type, gravity_ena
 function Prop.Inherit(name, custom_values) end
 
 ---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/both.png" height="21"> <b>[Client/Server Side]</b>
+---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/base-classes/entity#static-function-getall">docs</a>
+---
+---Returns a table containing all Entities of the class this is called on
+---@return Prop[] @Copy of table containing all Entities
+function Prop.GetAll() end
+
+---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/both.png" height="21"> <b>[Client/Server Side]</b>
+---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/base-classes/entity#static-function-getpairs">docs</a>
+---
+---Returns an iterator with all Entities of this class to be used with <code>pairs()</code>. This is a more performant method than <code>GetAll()</code>, as it will return the iterator to access the Entities directly instead of creating and returning a copy of the Entities table.<br><br><b>Note:</b> Destroying Entities from inside a <code>GetPairs()</code> loop will cause the iterable to change size during the process. If you want to loop-and-destroy, please use <code>GetAll()</code>.
+---@return EntityIterator<Prop> @Iterator with all Entities of this class
+function Prop.GetPairs() end
+
+---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/both.png" height="21"> <b>[Client/Server Side]</b>
 ---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/prop#function-getgrabmode">docs</a>
 ---
 ---Gets ability to Grab this Prop
@@ -6895,6 +7263,13 @@ function Prop:GetMassScale() end
 ---Gets the Asset name
 ---@return string @asset name
 function Prop:GetMesh() end
+
+---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/both.png" height="21"> <b>[Client/Server Side]</b>
+---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/prop#function-isonewayinteraction">docs</a>
+---
+---Gets whether one-way interaction is enabled on this Prop
+---@return boolean 
+function Prop:IsOneWayInteraction() end
 
 ---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/authority-only.png" height="21"> <b>[Authority Side]</b>
 ---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/prop#function-setbuoyancypontoons">docs</a>
@@ -6947,6 +7322,13 @@ function Prop:SetMassScale(scale) end
 ---Changes the mesh in runtime
 ---@param asset string @asset
 function Prop:SetMesh(asset) end
+
+---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/authority-only.png" height="21"> <b>[Authority Side]</b>
+---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/prop#function-setonewayinteraction">docs</a>
+---
+---Sets whether this Prop treats every physics body without it as infinitely heavy, so they push it around but never get pushed back
+---@param one_way_interaction boolean 
+function Prop:SetOneWayInteraction(one_way_interaction) end
 
 ---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/authority-only.png" height="21"> <b>[Authority Side]</b>
 ---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/prop#function-setphysicsdamping">docs</a>
@@ -7251,6 +7633,20 @@ function SceneCapture:Constructor(location, rotation, width, height, render_rate
 ---@return SceneCapture.Inherited @The new Class table, inheriting from SceneCapture
 function SceneCapture.Inherit(name, custom_values) end
 
+---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/both.png" height="21"> <b>[Client/Server Side]</b>
+---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/base-classes/entity#static-function-getall">docs</a>
+---
+---Returns a table containing all Entities of the class this is called on
+---@return SceneCapture[] @Copy of table containing all Entities
+function SceneCapture.GetAll() end
+
+---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/both.png" height="21"> <b>[Client/Server Side]</b>
+---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/base-classes/entity#static-function-getpairs">docs</a>
+---
+---Returns an iterator with all Entities of this class to be used with <code>pairs()</code>. This is a more performant method than <code>GetAll()</code>, as it will return the iterator to access the Entities directly instead of creating and returning a copy of the Entities table.<br><br><b>Note:</b> Destroying Entities from inside a <code>GetPairs()</code> loop will cause the iterable to change size during the process. If you want to loop-and-destroy, please use <code>GetAll()</code>.
+---@return EntityIterator<SceneCapture> @Iterator with all Entities of this class
+function SceneCapture.GetPairs() end
+
 ---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/client-only.png" height="21"> <b>[Client Side]</b>
 ---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/scenecapture#function-addrenderactor">docs</a>
 ---
@@ -7447,13 +7843,6 @@ function Server.GetActorsInRadius(location, radius, only_classes, dimension) end
 ---Gets a list of all values keys
 ---@return string[] @a list with all values keys
 function Server.GetAllValuesKeys() end
-
----<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/server-only.png" height="21"> <b>[Server Side]</b>
----<a href="https://docs.nanos-world.com/docs/scripting-reference/static-classes/server#static-function-getcompressionlevel">docs</a>
----
----Returns the server Compression Level being used
----@return integer @the server Compression Level
-function Server.GetCompressionLevel() end
 
 ---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/server-only.png" height="21"> <b>[Server Side]</b>
 ---<a href="https://docs.nanos-world.com/docs/scripting-reference/static-classes/server#static-function-getconnectioncount">docs</a>
@@ -7760,6 +8149,8 @@ function Server.UnloadPackage(package_folder_name) end
 ---@param callback function @Function to call when the event is triggered
 ---@return function @The callback function passed
 ---@overload fun(event_name: "ChangeMap", callback: fun(old_map: string, new_map: string)): fun(old_map: string, new_map: string) @Called when the map changes. This is always called just before Restart event
+---@overload fun(event_name: "PackageLoad", callback: fun(package_name: string)): fun(package_name: string) @Triggered when any package is loaded
+---@overload fun(event_name: "PackageUnload", callback: fun(package_name: string)): fun(package_name: string) @Triggered when any package is unloaded
 ---@overload fun(event_name: "PlayerConnect", callback: fun(ip: string, player_account_id: string, player_name: string, player_steam_id: string)): fun(ip: string, player_account_id: string, player_name: string, player_steam_id: string) @Called when a player is attempting to connect to the server, before the Player entity is created.<br/><br/>To refuse the connection, call <code>Server.KickByAccountID()</code> or <code>Server.BanByAccountID()</code> with the <code>player_account_id</code> (returning <code>false</code> is deprecated).
 ---@overload fun(event_name: "PlayerDisconnect", callback: fun(ip: string, player_account_id: string, player_name: string, player_steam_id: string, disconnect_reason: string)): fun(ip: string, player_account_id: string, player_name: string, player_steam_id: string, disconnect_reason: string) @Called when a player is disconnecting from the server
 ---@overload fun(event_name: "Restart", callback: fun()): fun() @Triggered when the server is restarting
@@ -7773,6 +8164,8 @@ function Server.Subscribe(event_name, callback) end
 ---@param event_name string @Name of the event to unsubscribe from
 ---@param callback? function @Optional callback to unsubscribe (if no callback is passed then all callbacks in this Package will be unsubscribed from this event)
 ---@overload fun(event_name: "ChangeMap", callback: fun(old_map: string, new_map: string)) @Called when the map changes. This is always called just before Restart event
+---@overload fun(event_name: "PackageLoad", callback: fun(package_name: string)) @Triggered when any package is loaded
+---@overload fun(event_name: "PackageUnload", callback: fun(package_name: string)) @Triggered when any package is unloaded
 ---@overload fun(event_name: "PlayerConnect", callback: fun(ip: string, player_account_id: string, player_name: string, player_steam_id: string)) @Called when a player is attempting to connect to the server, before the Player entity is created.<br/><br/>To refuse the connection, call <code>Server.KickByAccountID()</code> or <code>Server.BanByAccountID()</code> with the <code>player_account_id</code> (returning <code>false</code> is deprecated).
 ---@overload fun(event_name: "PlayerDisconnect", callback: fun(ip: string, player_account_id: string, player_name: string, player_steam_id: string, disconnect_reason: string)) @Called when a player is disconnecting from the server
 ---@overload fun(event_name: "Restart", callback: fun()) @Triggered when the server is restarting
@@ -7861,8 +8254,8 @@ function Sky.SetContrast(contrast) end
 ---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/client-only.png" height="21"> <b>[Client Side]</b>
 ---<a href="https://docs.nanos-world.com/docs/scripting-reference/static-classes/sky#static-function-setfog">docs</a>
 ---
----The fogginess of the scene. The impact this has on fog density is scaled from the Fog Density category
----@param fog_percentage number @Fog amount, from 0 to 100
+---The fogginess of the scene. The impact this has on fog density is scaled from the Fog Density category. With weather spawned it also pins the weather's fog to this value, so later weather changes keep it, until called with nil
+---@param fog_percentage? number @Fog amount, from 0 to 100, or nil to hand the fog back to the weather (Default: nil)
 function Sky.SetFog(fog_percentage) end
 
 ---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/client-only.png" height="21"> <b>[Client Side]</b>
@@ -7881,11 +8274,25 @@ function Sky.SetMoonAngle(yaw, pitch) end
 function Sky.SetMoonGlowIntensity(glow_intensity) end
 
 ---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/client-only.png" height="21"> <b>[Client Side]</b>
+---<a href="https://docs.nanos-world.com/docs/scripting-reference/static-classes/sky#static-function-setmoonlightcolor">docs</a>
+---
+---Sets the Moon Light Color, the color of the light the moon casts at night
+---@param color Color @The new Moon Light Color
+function Sky.SetMoonLightColor(color) end
+
+---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/client-only.png" height="21"> <b>[Client Side]</b>
 ---<a href="https://docs.nanos-world.com/docs/scripting-reference/static-classes/sky#static-function-setmoonlightintensity">docs</a>
 ---
 ---Sets the Moon Light Intensity
 ---@param intensity number @The new Moon Light Intensity
 function Sky.SetMoonLightIntensity(intensity) end
+
+---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/client-only.png" height="21"> <b>[Client Side]</b>
+---<a href="https://docs.nanos-world.com/docs/scripting-reference/static-classes/sky#static-function-setmoonmaterialcolor">docs</a>
+---
+---Sets the Moon Material Color, which tints the moon texture<br /><br />Call <code>Reconstruct()</code> afterwards to apply it
+---@param color Color @The new Moon Material Color
+function Sky.SetMoonMaterialColor(color) end
 
 ---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/client-only.png" height="21"> <b>[Client Side]</b>
 ---<a href="https://docs.nanos-world.com/docs/scripting-reference/static-classes/sky#static-function-setmoonphase">docs</a>
@@ -8031,6 +8438,20 @@ function Sound:Constructor(location, asset, is_2d_sound, auto_destroy, sound_typ
 ---@param custom_values? table @An optional table with custom values to be set in the inherited class table (Default: {})
 ---@return Sound.Inherited @The new Class table, inheriting from Sound
 function Sound.Inherit(name, custom_values) end
+
+---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/both.png" height="21"> <b>[Client/Server Side]</b>
+---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/base-classes/entity#static-function-getall">docs</a>
+---
+---Returns a table containing all Entities of the class this is called on
+---@return Sound[] @Copy of table containing all Entities
+function Sound.GetAll() end
+
+---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/both.png" height="21"> <b>[Client/Server Side]</b>
+---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/base-classes/entity#static-function-getpairs">docs</a>
+---
+---Returns an iterator with all Entities of this class to be used with <code>pairs()</code>. This is a more performant method than <code>GetAll()</code>, as it will return the iterator to access the Entities directly instead of creating and returning a copy of the Entities table.<br><br><b>Note:</b> Destroying Entities from inside a <code>GetPairs()</code> loop will cause the iterable to change size during the process. If you want to loop-and-destroy, please use <code>GetAll()</code>.
+---@return EntityIterator<Sound> @Iterator with all Entities of this class
+function Sound.GetPairs() end
 
 ---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/client-only.png" height="21"> <b>[Client Side]</b>
 ---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/sound#function-fadein">docs</a>
@@ -8217,6 +8638,20 @@ function StaticMesh:Constructor(location, rotation, static_mesh_asset, collision
 function StaticMesh.Inherit(name, custom_values) end
 
 ---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/both.png" height="21"> <b>[Client/Server Side]</b>
+---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/base-classes/entity#static-function-getall">docs</a>
+---
+---Returns a table containing all Entities of the class this is called on
+---@return StaticMesh[] @Copy of table containing all Entities
+function StaticMesh.GetAll() end
+
+---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/both.png" height="21"> <b>[Client/Server Side]</b>
+---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/base-classes/entity#static-function-getpairs">docs</a>
+---
+---Returns an iterator with all Entities of this class to be used with <code>pairs()</code>. This is a more performant method than <code>GetAll()</code>, as it will return the iterator to access the Entities directly instead of creating and returning a copy of the Entities table.<br><br><b>Note:</b> Destroying Entities from inside a <code>GetPairs()</code> loop will cause the iterable to change size during the process. If you want to loop-and-destroy, please use <code>GetAll()</code>.
+---@return EntityIterator<StaticMesh> @Iterator with all Entities of this class
+function StaticMesh.GetPairs() end
+
+---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/both.png" height="21"> <b>[Client/Server Side]</b>
 ---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/staticmesh#function-getmesh">docs</a>
 ---
 ---Gets the Asset path mesh used
@@ -8245,6 +8680,27 @@ function StaticMesh:SetMesh(static_mesh_asset) end
 Steam = {}
 
 ---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/client-only.png" height="21"> <b>[Client Side]</b>
+---<a href="https://docs.nanos-world.com/docs/scripting-reference/static-classes/steam#static-function-getjoinedfromfriend">docs</a>
+---
+---Gets the SteamID of the Friend whose invite or "Join Game" brought this player to the current server, or <code>nil</code> if they connected any other way.<br/><br/>This value is reported by the client, so a server should not trust it blindly (e.g. ask the Friend to accept before adding the player to a private group).
+---@return string? @The Friend's SteamID, or <code>nil</code>
+function Steam.GetJoinedFromFriend() end
+
+---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/client-only.png" height="21"> <b>[Client Side]</b>
+---<a href="https://docs.nanos-world.com/docs/scripting-reference/static-classes/steam#static-function-invitefriend">docs</a>
+---
+---Invites a Steam Friend to the current server
+---@param steam_id string @The SteamID of the Friend to invite
+---@return boolean @If the invite was sent
+function Steam.InviteFriend(steam_id) end
+
+---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/client-only.png" height="21"> <b>[Client Side]</b>
+---<a href="https://docs.nanos-world.com/docs/scripting-reference/static-classes/steam#static-function-openinvitedialog">docs</a>
+---
+---Opens the Steam Overlay invite dialog, so the player can invite Friends to the current server.<br/><br/>When a Friend accepts, they join this server and <code>Steam.GetJoinedFromFriend()</code> returns this player's SteamID on their side. If they were already on this server, the <code>FriendJoin</code> event is called instead
+function Steam.OpenInviteDialog() end
+
+---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/client-only.png" height="21"> <b>[Client Side]</b>
 ---<a href="https://docs.nanos-world.com/docs/scripting-reference/static-classes/steam#static-function-setrichpresence">docs</a>
 ---
 ---Sets Steam Rich Presence text
@@ -8256,6 +8712,23 @@ function Steam.SetRichPresence(text) end
 ---
 ---Triggers a Steam screenshot
 function Steam.TriggerScreenshot() end
+
+
+
+---Subscribe to an event
+---@param event_name string @Name of the event to subscribe to
+---@param callback function @Function to call when the event is triggered
+---@return function @The callback function passed
+---@overload fun(event_name: "FriendJoin", callback: fun(friend_steam_id: string)): fun(friend_steam_id: string) @Called when this player accepts a Friend's invite or "Join Game" to the server they are already on. In this case the player does not reconnect.<br/><br/>When the player connects from another server or from the menus, use <code>Steam.GetJoinedFromFriend()</code> instead.
+function Steam.Subscribe(event_name, callback) end
+
+---Unsubscribe from an event
+---@param event_name string @Name of the event to unsubscribe from
+---@param callback? function @Optional callback to unsubscribe (if no callback is passed then all callbacks in this Package will be unsubscribed from this event)
+---@overload fun(event_name: "FriendJoin", callback: fun(friend_steam_id: string)) @Called when this player accepts a Friend's invite or "Join Game" to the server they are already on. In this case the player does not reconnect.<br/><br/>When the player connects from another server or from the menus, use <code>Steam.GetJoinedFromFriend()</code> instead.
+function Steam.Unsubscribe(event_name, callback) end
+
+
 
 ---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/both.png" height="21"> <b>[Client/Server Side]</b>
 ---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/text3d">docs</a>
@@ -8292,6 +8765,20 @@ function Text3D:Constructor(location, rotation, text, scale, color, font_type, a
 ---@param custom_values? table @An optional table with custom values to be set in the inherited class table (Default: {})
 ---@return Text3D.Inherited @The new Class table, inheriting from Text3D
 function Text3D.Inherit(name, custom_values) end
+
+---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/both.png" height="21"> <b>[Client/Server Side]</b>
+---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/base-classes/entity#static-function-getall">docs</a>
+---
+---Returns a table containing all Entities of the class this is called on
+---@return Text3D[] @Copy of table containing all Entities
+function Text3D.GetAll() end
+
+---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/both.png" height="21"> <b>[Client/Server Side]</b>
+---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/base-classes/entity#static-function-getpairs">docs</a>
+---
+---Returns an iterator with all Entities of this class to be used with <code>pairs()</code>. This is a more performant method than <code>GetAll()</code>, as it will return the iterator to access the Entities directly instead of creating and returning a copy of the Entities table.<br><br><b>Note:</b> Destroying Entities from inside a <code>GetPairs()</code> loop will cause the iterable to change size during the process. If you want to loop-and-destroy, please use <code>GetAll()</code>.
+---@return EntityIterator<Text3D> @Iterator with all Entities of this class
+function Text3D.GetPairs() end
 
 ---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/both.png" height="21"> <b>[Client/Server Side]</b>
 ---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/text3d#function-setfont">docs</a>
@@ -8376,6 +8863,20 @@ function TextRender:Constructor(location, rotation, text, word_size, color, rend
 ---@param custom_values? table @An optional table with custom values to be set in the inherited class table (Default: {})
 ---@return TextRender.Inherited @The new Class table, inheriting from TextRender
 function TextRender.Inherit(name, custom_values) end
+
+---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/both.png" height="21"> <b>[Client/Server Side]</b>
+---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/base-classes/entity#static-function-getall">docs</a>
+---
+---Returns a table containing all Entities of the class this is called on
+---@return TextRender[] @Copy of table containing all Entities
+function TextRender.GetAll() end
+
+---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/both.png" height="21"> <b>[Client/Server Side]</b>
+---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/base-classes/entity#static-function-getpairs">docs</a>
+---
+---Returns an iterator with all Entities of this class to be used with <code>pairs()</code>. This is a more performant method than <code>GetAll()</code>, as it will return the iterator to access the Entities directly instead of creating and returning a copy of the Entities table.<br><br><b>Note:</b> Destroying Entities from inside a <code>GetPairs()</code> loop will cause the iterable to change size during the process. If you want to loop-and-destroy, please use <code>GetAll()</code>.
+---@return EntityIterator<TextRender> @Iterator with all Entities of this class
+function TextRender.GetPairs() end
 
 ---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/both.png" height="21"> <b>[Client/Server Side]</b>
 ---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/textrender#function-getcolor">docs</a>
@@ -8543,6 +9044,15 @@ function Timer.SetRemainingTime(timer_id, time) end
 ---@param ...? any @Additional parameters to pass to the function (Default: nil)
 ---@return integer @the timeout_id
 function Timer.SetTimeout(callback, milliseconds, ...) end
+
+---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/both.png" height="21"> <b>[Client/Server Side]</b>
+---<a href="https://docs.nanos-world.com/docs/scripting-reference/static-classes/timer#static-function-unbind">docs</a>
+---
+---Unbinds a Timer from an Actor it was bound to with Timer.Bind, without clearing or resetting the Timer
+---@param timer_id integer @The Timer ID
+---@param actor Actor @Actor to be unbound
+---@return boolean @true if the Timer was bound to this Actor and got unbound
+function Timer.Unbind(timer_id, actor) end
 
 ---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/both.png" height="21"> <b>[Client/Server Side]</b>
 ---<a href="https://docs.nanos-world.com/docs/scripting-reference/utility-libraries/toml">docs</a>
@@ -8715,6 +9225,20 @@ function Trigger:Constructor(location, rotation, extent, trigger_type, is_visibl
 ---@param custom_values? table @An optional table with custom values to be set in the inherited class table (Default: {})
 ---@return Trigger.Inherited @The new Class table, inheriting from Trigger
 function Trigger.Inherit(name, custom_values) end
+
+---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/both.png" height="21"> <b>[Client/Server Side]</b>
+---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/base-classes/entity#static-function-getall">docs</a>
+---
+---Returns a table containing all Entities of the class this is called on
+---@return Trigger[] @Copy of table containing all Entities
+function Trigger.GetAll() end
+
+---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/both.png" height="21"> <b>[Client/Server Side]</b>
+---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/base-classes/entity#static-function-getpairs">docs</a>
+---
+---Returns an iterator with all Entities of this class to be used with <code>pairs()</code>. This is a more performant method than <code>GetAll()</code>, as it will return the iterator to access the Entities directly instead of creating and returning a copy of the Entities table.<br><br><b>Note:</b> Destroying Entities from inside a <code>GetPairs()</code> loop will cause the iterable to change size during the process. If you want to loop-and-destroy, please use <code>GetAll()</code>.
+---@return EntityIterator<Trigger> @Iterator with all Entities of this class
+function Trigger.GetPairs() end
 
 ---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/authority-only.png" height="21"> <b>[Authority Side]</b>
 ---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/trigger#function-forceoverlapchecking">docs</a>
@@ -9043,6 +9567,20 @@ Vehicle = {}
 ---@param custom_values? table @An optional table with custom values to be set in the inherited class table (Default: {})
 ---@return Vehicle.Inherited @The new Class table, inheriting from Vehicle
 function Vehicle.Inherit(name, custom_values) end
+
+---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/both.png" height="21"> <b>[Client/Server Side]</b>
+---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/base-classes/entity#static-function-getall">docs</a>
+---
+---Returns a table containing all Entities of the class this is called on
+---@return Vehicle[] @Copy of table containing all Entities
+function Vehicle.GetAll() end
+
+---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/both.png" height="21"> <b>[Client/Server Side]</b>
+---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/base-classes/entity#static-function-getpairs">docs</a>
+---
+---Returns an iterator with all Entities of this class to be used with <code>pairs()</code>. This is a more performant method than <code>GetAll()</code>, as it will return the iterator to access the Entities directly instead of creating and returning a copy of the Entities table.<br><br><b>Note:</b> Destroying Entities from inside a <code>GetPairs()</code> loop will cause the iterable to change size during the process. If you want to loop-and-destroy, please use <code>GetAll()</code>.
+---@return EntityIterator<Vehicle> @Iterator with all Entities of this class
+function Vehicle.GetPairs() end
 
 ---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/both.png" height="21"> <b>[Client/Server Side]</b>
 ---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/base-classes/vehicle#function-addskeletalmeshattached">docs</a>
@@ -9430,6 +9968,20 @@ function VehicleWater:Constructor(location, rotation, asset, collision_type, gra
 ---@return VehicleWater.Inherited @The new Class table, inheriting from VehicleWater
 function VehicleWater.Inherit(name, custom_values) end
 
+---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/both.png" height="21"> <b>[Client/Server Side]</b>
+---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/base-classes/entity#static-function-getall">docs</a>
+---
+---Returns a table containing all Entities of the class this is called on
+---@return VehicleWater[] @Copy of table containing all Entities
+function VehicleWater.GetAll() end
+
+---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/both.png" height="21"> <b>[Client/Server Side]</b>
+---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/base-classes/entity#static-function-getpairs">docs</a>
+---
+---Returns an iterator with all Entities of this class to be used with <code>pairs()</code>. This is a more performant method than <code>GetAll()</code>, as it will return the iterator to access the Entities directly instead of creating and returning a copy of the Entities table.<br><br><b>Note:</b> Destroying Entities from inside a <code>GetPairs()</code> loop will cause the iterable to change size during the process. If you want to loop-and-destroy, please use <code>GetAll()</code>.
+---@return EntityIterator<VehicleWater> @Iterator with all Entities of this class
+function VehicleWater.GetPairs() end
+
 ---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/server-only.png" height="21"> <b>[Server Side]</b>
 ---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/vehiclewater#function-setengineoffset">docs</a>
 ---
@@ -9440,8 +9992,8 @@ function VehicleWater:SetEngineOffset(offset) end
 ---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/server-only.png" height="21"> <b>[Server Side]</b>
 ---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/vehiclewater#function-setthruststrength">docs</a>
 ---
----Sets the force of the Engine/Thruster. Default is 1000
----@param force integer @The new force of the Engine/Thruster
+---Sets the force of the Engine/Thruster, in Newtons. Default is 3000, up to 65535.<br/><br/>Scale it with the boat's mass: the default suits a ~400 kg boat
+---@param force integer @The new force of the Engine/Thruster, in Newtons
 function VehicleWater:SetThrustStrength(force) end
 
 ---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/server-only.png" height="21"> <b>[Server Side]</b>
@@ -9486,6 +10038,20 @@ function VehicleWheeled:Constructor(location, rotation, asset, collision_type, g
 ---@param custom_values? table @An optional table with custom values to be set in the inherited class table (Default: {})
 ---@return VehicleWheeled.Inherited @The new Class table, inheriting from VehicleWheeled
 function VehicleWheeled.Inherit(name, custom_values) end
+
+---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/both.png" height="21"> <b>[Client/Server Side]</b>
+---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/base-classes/entity#static-function-getall">docs</a>
+---
+---Returns a table containing all Entities of the class this is called on
+---@return VehicleWheeled[] @Copy of table containing all Entities
+function VehicleWheeled.GetAll() end
+
+---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/both.png" height="21"> <b>[Client/Server Side]</b>
+---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/base-classes/entity#static-function-getpairs">docs</a>
+---
+---Returns an iterator with all Entities of this class to be used with <code>pairs()</code>. This is a more performant method than <code>GetAll()</code>, as it will return the iterator to access the Entities directly instead of creating and returning a copy of the Entities table.<br><br><b>Note:</b> Destroying Entities from inside a <code>GetPairs()</code> loop will cause the iterable to change size during the process. If you want to loop-and-destroy, please use <code>GetAll()</code>.
+---@return EntityIterator<VehicleWheeled> @Iterator with all Entities of this class
+function VehicleWheeled.GetPairs() end
 
 ---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/client-only.png" height="21"> <b>[Client Side]</b>
 ---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/vehiclewheeled#function-getgear">docs</a>
@@ -9587,7 +10153,7 @@ function VehicleWheeled:SetHeadlightsSetup(location, color) end
 ---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/vehiclewheeled#function-sethornsound">docs</a>
 ---
 ---Sets the sound asset used by the vehicle horn
----@param sound_asset string @The new sound asset used by the vehicle horn
+---@param sound_asset? string @The new sound asset used by the vehicle horn, pass nil or an empty string for no sound (Default: nil)
 function VehicleWheeled:SetHornSound(sound_asset) end
 
 ---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/server-only.png" height="21"> <b>[Server Side]</b>
@@ -9941,6 +10507,20 @@ function Weapon:Constructor(location, rotation, asset, collision_type, gravity_e
 ---@param custom_values? table @An optional table with custom values to be set in the inherited class table (Default: {})
 ---@return Weapon.Inherited @The new Class table, inheriting from Weapon
 function Weapon.Inherit(name, custom_values) end
+
+---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/both.png" height="21"> <b>[Client/Server Side]</b>
+---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/base-classes/entity#static-function-getall">docs</a>
+---
+---Returns a table containing all Entities of the class this is called on
+---@return Weapon[] @Copy of table containing all Entities
+function Weapon.GetAll() end
+
+---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/both.png" height="21"> <b>[Client/Server Side]</b>
+---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/base-classes/entity#static-function-getpairs">docs</a>
+---
+---Returns an iterator with all Entities of this class to be used with <code>pairs()</code>. This is a more performant method than <code>GetAll()</code>, as it will return the iterator to access the Entities directly instead of creating and returning a copy of the Entities table.<br><br><b>Note:</b> Destroying Entities from inside a <code>GetPairs()</code> loop will cause the iterable to change size during the process. If you want to loop-and-destroy, please use <code>GetAll()</code>.
+---@return EntityIterator<Weapon> @Iterator with all Entities of this class
+function Weapon.GetPairs() end
 
 ---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/both.png" height="21"> <b>[Client/Server Side]</b>
 ---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/weapon#function-getammobag">docs</a>
@@ -10312,21 +10892,21 @@ function Weapon:SetMagazineMesh(magazine_mesh, magazine_mesh_hide_bone) end
 ---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/weapon#function-setparticlesbarrel">docs</a>
 ---
 ---Sets the Particle of the fire blast at the muzzle
----@param particle_asset_path string @The Particle asset to spawn at the muzzle when firing
+---@param particle_asset_path? string @The Particle asset to spawn at the muzzle when firing, pass nil or an empty string for no particle (Default: nil)
 function Weapon:SetParticlesBarrel(particle_asset_path) end
 
 ---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/server-only.png" height="21"> <b>[Server Side]</b>
 ---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/weapon#function-setparticlesbullettrail">docs</a>
 ---
 ---Sets the Particle of the bullet trail
----@param particle_bullet_trail_asset_path string @The Particle asset to spawn for each bullet
+---@param particle_bullet_trail_asset_path? string @The Particle asset to spawn for each bullet, pass nil or an empty string for no particle (Default: nil)
 function Weapon:SetParticlesBulletTrail(particle_bullet_trail_asset_path) end
 
 ---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/server-only.png" height="21"> <b>[Server Side]</b>
 ---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/weapon#function-setparticlesshells">docs</a>
 ---
 ---Sets the Particle of the empty shells ejected when firing
----@param particle_shells_asset_path string @The Particle asset to spawn when ejecting a shell
+---@param particle_shells_asset_path? string @The Particle asset to spawn when ejecting a shell, pass nil or an empty string for no particle (Default: nil)
 function Weapon:SetParticlesShells(particle_shells_asset_path) end
 
 ---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/server-only.png" height="21"> <b>[Server Side]</b>
@@ -10362,7 +10942,7 @@ function Weapon:SetSightTransform(sight_location, sight_rotation) end
 ---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/weapon#function-setsoundaim">docs</a>
 ---
 ---Sets the Sound played when starting to aim
----@param sound_aim_asset_path string @The Sound asset to play
+---@param sound_aim_asset_path? string @The Sound asset to play, pass nil or an empty string for no sound (Default: nil)
 ---@param volume? number @Volume multiplier (Default: 1)
 ---@param pitch? number @Pitch multiplier (Default: 1)
 function Weapon:SetSoundAim(sound_aim_asset_path, volume, pitch) end
@@ -10371,7 +10951,7 @@ function Weapon:SetSoundAim(sound_aim_asset_path, volume, pitch) end
 ---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/weapon#function-setsounddry">docs</a>
 ---
 ---Sets the Sound played when trying to fire with an empty clip
----@param sound_dry_asset_path string @The Sound asset to play
+---@param sound_dry_asset_path? string @The Sound asset to play, pass nil or an empty string for no sound (Default: nil)
 ---@param volume? number @Volume multiplier (Default: 1)
 ---@param pitch? number @Pitch multiplier (Default: 1)
 function Weapon:SetSoundDry(sound_dry_asset_path, volume, pitch) end
@@ -10380,7 +10960,7 @@ function Weapon:SetSoundDry(sound_dry_asset_path, volume, pitch) end
 ---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/weapon#function-setsoundfire">docs</a>
 ---
 ---Sets the Sound played when firing
----@param sound_fire_asset_path string @The Sound asset to play
+---@param sound_fire_asset_path? string @The Sound asset to play, pass nil or an empty string for no sound (Default: nil)
 ---@param volume? number @Volume multiplier (Default: 1)
 ---@param pitch? number @Pitch multiplier (Default: 1)
 function Weapon:SetSoundFire(sound_fire_asset_path, volume, pitch) end
@@ -10389,7 +10969,7 @@ function Weapon:SetSoundFire(sound_fire_asset_path, volume, pitch) end
 ---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/weapon#function-setsoundfirelastbullets">docs</a>
 ---
 ---Sound when firing with only having X remaining bullets in the magazine, useful for last shot 'ping' or sound when low on bullets
----@param sound_asset_path string @The Sound asset to play
+---@param sound_asset_path? string @The Sound asset to play, pass nil or an empty string for no sound (Default: nil)
 ---@param remaining_bullets_count? integer @The amount of remaining bullet to start playing this sound (Default: 1)
 function Weapon:SetSoundFireLastBullets(sound_asset_path, remaining_bullets_count) end
 
@@ -10397,7 +10977,7 @@ function Weapon:SetSoundFireLastBullets(sound_asset_path, remaining_bullets_coun
 ---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/weapon#function-setsoundload">docs</a>
 ---
 ---Sets the Sound played when loading a magazine
----@param sound_load_asset_path string @The Sound asset to play
+---@param sound_load_asset_path? string @The Sound asset to play, pass nil or an empty string for no sound (Default: nil)
 ---@param volume? number @Volume multiplier (Default: 1)
 ---@param pitch? number @Pitch multiplier (Default: 1)
 function Weapon:SetSoundLoad(sound_load_asset_path, volume, pitch) end
@@ -10406,7 +10986,7 @@ function Weapon:SetSoundLoad(sound_load_asset_path, volume, pitch) end
 ---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/weapon#function-setsoundunload">docs</a>
 ---
 ---Sets the Sound played when unloading a magazine
----@param sound_unload_asset_path string @The Sound asset to play
+---@param sound_unload_asset_path? string @The Sound asset to play, pass nil or an empty string for no sound (Default: nil)
 ---@param volume? number @Volume multiplier (Default: 1)
 ---@param pitch? number @Pitch multiplier (Default: 1)
 function Weapon:SetSoundUnload(sound_unload_asset_path, volume, pitch) end
@@ -10415,7 +10995,7 @@ function Weapon:SetSoundUnload(sound_unload_asset_path, volume, pitch) end
 ---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/weapon#function-setsoundzooming">docs</a>
 ---
 ---Sets the Sound played when zooming
----@param sound_zooming_asset_path string @The Sound asset to play
+---@param sound_zooming_asset_path? string @The Sound asset to play, pass nil or an empty string for no sound (Default: nil)
 ---@param volume? number @Volume multiplier (Default: 1)
 ---@param pitch? number @Pitch multiplier (Default: 1)
 function Weapon:SetSoundZooming(sound_zooming_asset_path, volume, pitch) end
@@ -10587,6 +11167,20 @@ function WebUI:Constructor(name, path, visibility, is_transparent, auto_resize, 
 ---@param custom_values? table @An optional table with custom values to be set in the inherited class table (Default: {})
 ---@return WebUI.Inherited @The new Class table, inheriting from WebUI
 function WebUI.Inherit(name, custom_values) end
+
+---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/both.png" height="21"> <b>[Client/Server Side]</b>
+---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/base-classes/entity#static-function-getall">docs</a>
+---
+---Returns a table containing all Entities of the class this is called on
+---@return WebUI[] @Copy of table containing all Entities
+function WebUI.GetAll() end
+
+---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/both.png" height="21"> <b>[Client/Server Side]</b>
+---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/base-classes/entity#static-function-getpairs">docs</a>
+---
+---Returns an iterator with all Entities of this class to be used with <code>pairs()</code>. This is a more performant method than <code>GetAll()</code>, as it will return the iterator to access the Entities directly instead of creating and returning a copy of the Entities table.<br><br><b>Note:</b> Destroying Entities from inside a <code>GetPairs()</code> loop will cause the iterable to change size during the process. If you want to loop-and-destroy, please use <code>GetAll()</code>.
+---@return EntityIterator<WebUI> @Iterator with all Entities of this class
+function WebUI.GetPairs() end
 
 ---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/client-only.png" height="21"> <b>[Client Side]</b>
 ---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/webui#function-bringtofront">docs</a>
@@ -10850,6 +11444,20 @@ function Widget:Constructor(blueprint_path) end
 ---@return Widget.Inherited @The new Class table, inheriting from Widget
 function Widget.Inherit(name, custom_values) end
 
+---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/both.png" height="21"> <b>[Client/Server Side]</b>
+---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/base-classes/entity#static-function-getall">docs</a>
+---
+---Returns a table containing all Entities of the class this is called on
+---@return Widget[] @Copy of table containing all Entities
+function Widget.GetAll() end
+
+---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/both.png" height="21"> <b>[Client/Server Side]</b>
+---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/base-classes/entity#static-function-getpairs">docs</a>
+---
+---Returns an iterator with all Entities of this class to be used with <code>pairs()</code>. This is a more performant method than <code>GetAll()</code>, as it will return the iterator to access the Entities directly instead of creating and returning a copy of the Entities table.<br><br><b>Note:</b> Destroying Entities from inside a <code>GetPairs()</code> loop will cause the iterable to change size during the process. If you want to loop-and-destroy, please use <code>GetAll()</code>.
+---@return EntityIterator<Widget> @Iterator with all Entities of this class
+function Widget.GetPairs() end
+
 ---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/client-only.png" height="21"> <b>[Client Side]</b>
 ---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/widget#function-addchild">docs</a>
 ---
@@ -11050,6 +11658,20 @@ Widget3D = {}
 ---@param custom_values? table @An optional table with custom values to be set in the inherited class table (Default: {})
 ---@return Widget3D.Inherited @The new Class table, inheriting from Widget3D
 function Widget3D.Inherit(name, custom_values) end
+
+---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/both.png" height="21"> <b>[Client/Server Side]</b>
+---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/base-classes/entity#static-function-getall">docs</a>
+---
+---Returns a table containing all Entities of the class this is called on
+---@return Widget3D[] @Copy of table containing all Entities
+function Widget3D.GetAll() end
+
+---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/both.png" height="21"> <b>[Client/Server Side]</b>
+---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/base-classes/entity#static-function-getpairs">docs</a>
+---
+---Returns an iterator with all Entities of this class to be used with <code>pairs()</code>. This is a more performant method than <code>GetAll()</code>, as it will return the iterator to access the Entities directly instead of creating and returning a copy of the Entities table.<br><br><b>Note:</b> Destroying Entities from inside a <code>GetPairs()</code> loop will cause the iterable to change size during the process. If you want to loop-and-destroy, please use <code>GetAll()</code>.
+---@return EntityIterator<Widget3D> @Iterator with all Entities of this class
+function Widget3D.GetPairs() end
 
 ---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/client-only.png" height="21"> <b>[Client Side]</b>
 ---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/widget3d#function-getwidget">docs</a>
