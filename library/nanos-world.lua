@@ -1,5 +1,9 @@
 ---@meta
 
+---Models the values yielded by pairs(Class.GetPairs()).
+---The engine returns a pairs-compatible proxy, not a copy of the entities table.
+---@class EntityIterator<T>: { [any]: T }
+
 ---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/both.png" height="21"> <b>[Client/Server Side]</b>
 ---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/base-classes/actor">docs</a>
 ---
@@ -20,6 +24,20 @@ Actor = {}
 ---@param custom_values? table @An optional table with custom values to be set in the inherited class table (Default: {})
 ---@return Actor.Inherited @The new Class table, inheriting from Actor
 function Actor.Inherit(name, custom_values) end
+
+---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/both.png" height="21"> <b>[Client/Server Side]</b>
+---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/base-classes/entity#static-function-getall">docs</a>
+---
+---Returns a table containing all Entities of the class this is called on
+---@return Actor[] @Copy of table containing all Entities
+function Actor.GetAll() end
+
+---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/both.png" height="21"> <b>[Client/Server Side]</b>
+---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/base-classes/entity#static-function-getpairs">docs</a>
+---
+---Returns an iterator with all Entities of this class to be used with <code>pairs()</code>.<br/><br/>This is a more performant method than <code>GetAll()</code>, as it will return the iterator to access the Entities directly instead of creating and returning a copy of the Entities table.<br><br><b>Note:</b> Destroying Entities from inside a <code>GetPairs()</code> loop will cause the iterable to change size during the process. If you want to loop-and-destroy, please use <code>GetAll()</code>.
+---@return EntityIterator<Actor> @Iterator with all Entities of this class
+function Actor.GetPairs() end
 
 ---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/client-only.png" height="21"> <b>[Client Side]</b>
 ---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/base-classes/actor#function-addactortag">docs</a>
@@ -209,7 +227,7 @@ function Actor:GetScreenPercentage() end
 ---Gets a Socket Transform in world space given a bone or socket name
 ---@param socket_name string @Name of the socket
 ---@param attachable_id? string @The attachable ID (set with <code>AddSkeletalMeshAttached</code> or <code>AddStaticMeshAttached</code>) to read the Socket from. Pass empty to read from the main mesh (Default: "")
----@return { Location: Vector, Rotation: Rotator } @Socket Transform in world space given a bone or socket name
+---@return { Location: Vector, Rotation: Rotator, Scale: Vector } @Socket Transform in world space given a bone or socket name
 function Actor:GetSocketTransform(socket_name, attachable_id) end
 
 ---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/both.png" height="21"> <b>[Client/Server Side]</b>
@@ -234,16 +252,23 @@ function Actor:HasNetworkAuthority() end
 function Actor:IsGravityEnabled() end
 
 ---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/both.png" height="21"> <b>[Client/Server Side]</b>
+---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/base-classes/actor#function-isimpulseondamage">docs</a>
+---
+---Returns true if taking damage pushes this Actor's physics body
+---@return boolean @Whether taking damage pushes this Actor
+function Actor:IsImpulseOnDamage() end
+
+---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/both.png" height="21"> <b>[Client/Server Side]</b>
 ---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/base-classes/actor#function-isinwater">docs</a>
 ---
----Returns true if this Actor is in water. Only Actors that simulate physics work for this function, such as <code>Prop</code>, <code>Vehicle</code>, <code>Pickables</code> and <code>Character</code> only.
+---Returns true if this Actor is in water.<br/><br/>Only Actors that simulate physics work for this function, such as <code>Prop</code>, <code>Vehicle</code>, <code>Pickables</code> and <code>Character</code> only.
 ---@return boolean @Whether this Actor is in water
 function Actor:IsInWater() end
 
 ---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/both.png" height="21"> <b>[Client/Server Side]</b>
 ---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/base-classes/actor#function-isnetworkdistributed">docs</a>
 ---
----Returns true if this Actor is currently network distributed. Only actors being network distributed can have their network authority set<br>Entities have NetworkDistributed automatically disabled when: Attached, Possessed, Grabbed, Picked Up or Driving
+---Returns true if this Actor is currently network distributed.<br/><br/>Only actors being network distributed can have their network authority set<br>Entities have NetworkDistributed automatically disabled when: Attached, Possessed, Grabbed, Picked Up or Driving
 ---@return boolean @Whether this Actor is currently network distributed
 function Actor:IsNetworkDistributed() end
 
@@ -261,10 +286,25 @@ function Actor:IsVisible() end
 ---@param tag string @The tag to remove
 function Actor:RemoveActorTag(tag) end
 
+---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/authority-only.png" height="21"> <b>[Authority Side]</b>
+---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/base-classes/actor#function-resetvelocity">docs</a>
+---
+---Resets this Actor's linear and angular velocities to zero.<br/><br/>For Pawns, also resets the character movement velocity.
+function Actor:ResetVelocity() end
+
+---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/network-authority.png" height="21"> <b>[Network Authority]</b>
+---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/base-classes/actor#function-rotaterelativeto">docs</a>
+---
+---Smoothly rotates this attached actor to an angle relative to its parent over a certain time.<br/><br/>Like <code>SetRelativeRotation</code>, it keeps following the parent while it rotates. It can only be used while the actor is attached, and it is cancelled if the actor gets attached to something else or detached
+---@param relative_rotation Rotator @The target rotation, relative to the parent
+---@param time number @Time to interpolate from current location to target location
+---@param exp? number @Exponent used to smooth interpolation. Use <code>0</code> for linear movement (Default: 0)
+function Actor:RotateRelativeTo(relative_rotation, time, exp) end
+
 ---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/network-authority.png" height="21"> <b>[Network Authority]</b>
 ---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/base-classes/actor#function-rotateto">docs</a>
 ---
----Smoothly rotates this actor to an angle over a certain time
+---Smoothly rotates this actor to an angle over a certain time.<br/><br/>It can't be used while the actor is attached, grabbed, picked or in a vehicle. Use <code>RotateRelativeTo</code> for attached actors
 ---@param rotation Rotator @The target rotation
 ---@param time number @Time to interpolate from current location to target location
 ---@param exp? number @Exponent used to smooth interpolation. Use <code>0</code> for linear movement (Default: 0)
@@ -301,7 +341,7 @@ function Actor:SetDimension(dimension) end
 ---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/server-only.png" height="21"> <b>[Server Side]</b>
 ---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/base-classes/actor#function-setdistanceoptimizationmultiplier">docs</a>
 ---
----Sets this Actor's distance optimization multiplier.<br/>A value of 0 disables optimization. Values under 1 decrease the effect, while values over 1 increase it
+---Sets this Actor's distance optimization multiplier.<br/><br/>A value of 0 disables optimization. Values under 1 decrease the effect, while values over 1 increase it
 ---@param multiplier number @The new distance optimization multiplier
 function Actor:SetDistanceOptimizationMultiplier(multiplier) end
 
@@ -323,10 +363,17 @@ function Actor:SetGravityEnabled(gravity_enabled) end
 ---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/client-only.png" height="21"> <b>[Client Side]</b>
 ---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/base-classes/actor#function-sethighlightenabled">docs</a>
 ---
----Sets whether the highlight is enabled on this Actor, and which highlight index to use. This will apply the highlight on every attached entity too
+---Sets whether the highlight is enabled on this Actor, and which highlight index to use.<br/><br/>This will apply the highlight on every attached entity too
 ---@param is_enabled boolean @Whether the highlight is enabled
 ---@param index? integer @Index to use (should be <code>0</code>, <code>1</code> or <code>2</code>) (Default: 0)
 function Actor:SetHighlightEnabled(is_enabled, index) end
+
+---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/both.png" height="21"> <b>[Client/Server Side]</b>
+---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/base-classes/actor#function-setimpulseondamage">docs</a>
+---
+---Sets whether taking damage (shots, melee, explosions) pushes this Actor's physics body.<br/><br/>Useful for things that should react to shots without being knocked around, like a shooting target that still falls with gravity and can be moved by other means. Enabled by default
+---@param impulse_on_damage boolean @Whether taking damage pushes this Actor
+function Actor:SetImpulseOnDamage(impulse_on_damage) end
 
 ---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/authority-only.png" height="21"> <b>[Authority Side]</b>
 ---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/base-classes/actor#function-setlifespan">docs</a>
@@ -345,21 +392,21 @@ function Actor:SetLocation(location) end
 ---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/server-only.png" height="21"> <b>[Server Side]</b>
 ---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/base-classes/actor#function-setnetworkauthority">docs</a>
 ---
----Sets the Player to have network authority over this Actor. This Player will be manually assigned to handle this Actor's physics and share its location with other clients. The authority assignment will still be overridden by the game automatically<br><br>Please refer to <a href="/docs/core-concepts/scripting/authority-concepts#network-authority">Network Authority</a> for more information
+---Sets the Player to have network authority over this Actor.<br/><br/>This Player will be manually assigned to handle this Actor's physics and share its location with other clients. The authority assignment will still be overridden by the game automatically<br><br>Please refer to <a href="/docs/core-concepts/scripting/authority-concepts#network-authority">Network Authority</a> for more information
 ---@param player? Player @New player which will assume the Network Authority of this Actor (Default: nil)
 function Actor:SetNetworkAuthority(player) end
 
 ---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/server-only.png" height="21"> <b>[Server Side]</b>
 ---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/base-classes/actor#function-setnetworkauthorityautodistributed">docs</a>
 ---
----Sets if this Actor will auto distribute the network authority between players when idle<br><br>Please refer to <a href="/docs/core-concepts/scripting/authority-concepts#network-authority">Network Authority</a> for more information
+---Sets if this Actor will auto distribute the network authority between players.<br/><br/>It only happens while the Actor is idle.<br/><br/>Please refer to <a href="/docs/core-concepts/scripting/authority-concepts#network-authority">Network Authority</a> for more information
 ---@param auto_distribute boolean @If this Actor will be auto network distributed
 function Actor:SetNetworkAuthorityAutoDistributed(auto_distribute) end
 
 ---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/client-only.png" height="21"> <b>[Client Side]</b>
 ---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/base-classes/actor#function-setoutlineenabled">docs</a>
 ---
----Sets whether the outline is enabled on this Actor, and which outline index to use. This will apply the outline on every attached entity too
+---Sets whether the outline is enabled on this Actor, and which outline index to use.<br/><br/>This will apply the outline on every attached entity too
 ---@param is_enabled boolean @Whether the outline is enabled
 ---@param index? integer @Index to use (should be <code>0</code>, <code>1</code> or <code>2</code>) (Default: 0)
 function Actor:SetOutlineEnabled(is_enabled, index) end
@@ -381,7 +428,7 @@ function Actor:SetRelativeRotation(relative_rotation) end
 ---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/both.png" height="21"> <b>[Client/Server Side]</b>
 ---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/base-classes/actor#function-setrenderculldistance">docs</a>
 ---
----Sets this Actor's render cull distance. Note: this will only affect the rendering distance, the entity will still be spawned and synced normally regardless of this distance
+---Sets this Actor's render cull distance.<br/><br/>Note: this will only affect the rendering distance, the entity will still be spawned and synced normally regardless of this distance
 ---@param max_distance integer @The new render cull distance
 function Actor:SetRenderCullDistance(max_distance) end
 
@@ -407,9 +454,18 @@ function Actor:SetScale(scale) end
 function Actor:SetVisibility(is_visible) end
 
 ---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/network-authority.png" height="21"> <b>[Network Authority]</b>
+---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/base-classes/actor#function-translaterelativeto">docs</a>
+---
+---Smoothly moves this attached actor to a location relative to its parent over a certain time.<br/><br/>Like <code>SetRelativeLocation</code>, it keeps following the parent while it moves. It can only be used while the actor is attached, and it is cancelled if the actor gets attached to something else or detached
+---@param relative_location Vector @The target location, relative to the parent
+---@param time number @Time to interpolate from current location to target location
+---@param exp? number @Exponent used to smooth interpolation. Use <code>0</code> for linear movement (Default: 0)
+function Actor:TranslateRelativeTo(relative_location, time, exp) end
+
+---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/network-authority.png" height="21"> <b>[Network Authority]</b>
 ---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/base-classes/actor#function-translateto">docs</a>
 ---
----Smoothly moves this actor to a location over a certain time
+---Smoothly moves this actor to a location over a certain time.<br/><br/>It can't be used while the actor is attached, grabbed, picked or in a vehicle. Use <code>TranslateRelativeTo</code> for attached actors
 ---@param location Vector @The target location
 ---@param time number @Time to interpolate from current location to target location
 ---@param exp? number @Exponent used to smooth interpolation. Use <code>0</code> for linear movement (Default: 0)
@@ -430,8 +486,8 @@ function Actor:WasRecentlyRendered() end
 ---@overload fun(event_name: "ClassRegister", callback: fun(class: table)): fun(class: table) @Triggered when a new Class is registered with the <a href='/docs/core-concepts/scripting/inheriting-classes'>Inheriting System</a>
 ---@overload fun(event_name: "Destroy", callback: fun(self: Actor)): fun(self: Actor) @Triggered when an Entity is destroyed
 ---@overload fun(event_name: "DimensionChange", callback: fun(self: Actor, old_dimension: integer, new_dimension: integer)): fun(self: Actor, old_dimension: integer, new_dimension: integer) @Triggered when an Actor changes its dimension
----@overload fun(event_name: "EnterWater", callback: fun(self: Actor)): fun(self: Actor) @Triggered when an Actor enters a water body. Only Actors that simulate physics trigger this event, such as <code>Prop</code>, <code>Vehicle</code>, <code>Pickables</code> and <code>Character</code> only.
----@overload fun(event_name: "LeaveWater", callback: fun(self: Actor)): fun(self: Actor) @Triggered when an Actor leaves a water body. Only Actors that simulate physics trigger this event, such as <code>Prop</code>, <code>Vehicle</code>, <code>Pickables</code> and <code>Character</code> only.
+---@overload fun(event_name: "EnterWater", callback: fun(self: Actor)): fun(self: Actor) @Triggered when an Actor enters a water body.<br/><br/>Only Actors that simulate physics trigger this event, such as <code>Prop</code>, <code>Vehicle</code>, <code>Pickables</code> and <code>Character</code> only.
+---@overload fun(event_name: "LeaveWater", callback: fun(self: Actor)): fun(self: Actor) @Triggered when an Actor leaves a water body.<br/><br/>Only Actors that simulate physics trigger this event, such as <code>Prop</code>, <code>Vehicle</code>, <code>Pickables</code> and <code>Character</code> only.
 ---@overload fun(event_name: "NetworkAuthorityChange", callback: fun(self: Actor, is_network_authority: boolean)): fun(self: Actor, is_network_authority: boolean) @Triggered when the local Player gets/loses network authority over this actor
 ---@overload fun(event_name: "Spawn", callback: fun(self: Actor)): fun(self: Actor) @Triggered when an Entity is spawned/created
 ---@overload fun(event_name: "ValueChange", callback: fun(self: Actor, key: string, value: any)): fun(self: Actor, key: string, value: any) @Triggered when an Entity has a value changed with <code>:SetValue()</code>
@@ -445,8 +501,8 @@ function Actor.Subscribe(event_name, callback) end
 ---@overload fun(self: Actor, event_name: "ClassRegister", callback: fun(class: table)): fun(class: table) @Triggered when a new Class is registered with the <a href='/docs/core-concepts/scripting/inheriting-classes'>Inheriting System</a>
 ---@overload fun(self: Actor, event_name: "Destroy", callback: fun(self: Actor)): fun(self: Actor) @Triggered when an Entity is destroyed
 ---@overload fun(self: Actor, event_name: "DimensionChange", callback: fun(self: Actor, old_dimension: integer, new_dimension: integer)): fun(self: Actor, old_dimension: integer, new_dimension: integer) @Triggered when an Actor changes its dimension
----@overload fun(self: Actor, event_name: "EnterWater", callback: fun(self: Actor)): fun(self: Actor) @Triggered when an Actor enters a water body. Only Actors that simulate physics trigger this event, such as <code>Prop</code>, <code>Vehicle</code>, <code>Pickables</code> and <code>Character</code> only.
----@overload fun(self: Actor, event_name: "LeaveWater", callback: fun(self: Actor)): fun(self: Actor) @Triggered when an Actor leaves a water body. Only Actors that simulate physics trigger this event, such as <code>Prop</code>, <code>Vehicle</code>, <code>Pickables</code> and <code>Character</code> only.
+---@overload fun(self: Actor, event_name: "EnterWater", callback: fun(self: Actor)): fun(self: Actor) @Triggered when an Actor enters a water body.<br/><br/>Only Actors that simulate physics trigger this event, such as <code>Prop</code>, <code>Vehicle</code>, <code>Pickables</code> and <code>Character</code> only.
+---@overload fun(self: Actor, event_name: "LeaveWater", callback: fun(self: Actor)): fun(self: Actor) @Triggered when an Actor leaves a water body.<br/><br/>Only Actors that simulate physics trigger this event, such as <code>Prop</code>, <code>Vehicle</code>, <code>Pickables</code> and <code>Character</code> only.
 ---@overload fun(self: Actor, event_name: "NetworkAuthorityChange", callback: fun(self: Actor, is_network_authority: boolean)): fun(self: Actor, is_network_authority: boolean) @Triggered when the local Player gets/loses network authority over this actor
 ---@overload fun(self: Actor, event_name: "Spawn", callback: fun(self: Actor)): fun(self: Actor) @Triggered when an Entity is spawned/created
 ---@overload fun(self: Actor, event_name: "ValueChange", callback: fun(self: Actor, key: string, value: any)): fun(self: Actor, key: string, value: any) @Triggered when an Entity has a value changed with <code>:SetValue()</code>
@@ -458,8 +514,8 @@ function Actor:Subscribe(event_name, callback) end
 ---@overload fun(self: Actor, event_name: "ClassRegister", callback: fun(class: table)) @Triggered when a new Class is registered with the <a href='/docs/core-concepts/scripting/inheriting-classes'>Inheriting System</a>
 ---@overload fun(self: Actor, event_name: "Destroy", callback: fun(self: Actor)) @Triggered when an Entity is destroyed
 ---@overload fun(self: Actor, event_name: "DimensionChange", callback: fun(self: Actor, old_dimension: integer, new_dimension: integer)) @Triggered when an Actor changes its dimension
----@overload fun(self: Actor, event_name: "EnterWater", callback: fun(self: Actor)) @Triggered when an Actor enters a water body. Only Actors that simulate physics trigger this event, such as <code>Prop</code>, <code>Vehicle</code>, <code>Pickables</code> and <code>Character</code> only.
----@overload fun(self: Actor, event_name: "LeaveWater", callback: fun(self: Actor)) @Triggered when an Actor leaves a water body. Only Actors that simulate physics trigger this event, such as <code>Prop</code>, <code>Vehicle</code>, <code>Pickables</code> and <code>Character</code> only.
+---@overload fun(self: Actor, event_name: "EnterWater", callback: fun(self: Actor)) @Triggered when an Actor enters a water body.<br/><br/>Only Actors that simulate physics trigger this event, such as <code>Prop</code>, <code>Vehicle</code>, <code>Pickables</code> and <code>Character</code> only.
+---@overload fun(self: Actor, event_name: "LeaveWater", callback: fun(self: Actor)) @Triggered when an Actor leaves a water body.<br/><br/>Only Actors that simulate physics trigger this event, such as <code>Prop</code>, <code>Vehicle</code>, <code>Pickables</code> and <code>Character</code> only.
 ---@overload fun(self: Actor, event_name: "NetworkAuthorityChange", callback: fun(self: Actor, is_network_authority: boolean)) @Triggered when the local Player gets/loses network authority over this actor
 ---@overload fun(self: Actor, event_name: "Spawn", callback: fun(self: Actor)) @Triggered when an Entity is spawned/created
 ---@overload fun(self: Actor, event_name: "ValueChange", callback: fun(self: Actor, key: string, value: any)) @Triggered when an Entity has a value changed with <code>:SetValue()</code>
@@ -472,8 +528,8 @@ function Actor:Unsubscribe(event_name, callback) end
 ---@overload fun(event_name: "ClassRegister", callback: fun(class: table)) @Triggered when a new Class is registered with the <a href='/docs/core-concepts/scripting/inheriting-classes'>Inheriting System</a>
 ---@overload fun(event_name: "Destroy", callback: fun(self: Actor)) @Triggered when an Entity is destroyed
 ---@overload fun(event_name: "DimensionChange", callback: fun(self: Actor, old_dimension: integer, new_dimension: integer)) @Triggered when an Actor changes its dimension
----@overload fun(event_name: "EnterWater", callback: fun(self: Actor)) @Triggered when an Actor enters a water body. Only Actors that simulate physics trigger this event, such as <code>Prop</code>, <code>Vehicle</code>, <code>Pickables</code> and <code>Character</code> only.
----@overload fun(event_name: "LeaveWater", callback: fun(self: Actor)) @Triggered when an Actor leaves a water body. Only Actors that simulate physics trigger this event, such as <code>Prop</code>, <code>Vehicle</code>, <code>Pickables</code> and <code>Character</code> only.
+---@overload fun(event_name: "EnterWater", callback: fun(self: Actor)) @Triggered when an Actor enters a water body.<br/><br/>Only Actors that simulate physics trigger this event, such as <code>Prop</code>, <code>Vehicle</code>, <code>Pickables</code> and <code>Character</code> only.
+---@overload fun(event_name: "LeaveWater", callback: fun(self: Actor)) @Triggered when an Actor leaves a water body.<br/><br/>Only Actors that simulate physics trigger this event, such as <code>Prop</code>, <code>Vehicle</code>, <code>Pickables</code> and <code>Character</code> only.
 ---@overload fun(event_name: "NetworkAuthorityChange", callback: fun(self: Actor, is_network_authority: boolean)) @Triggered when the local Player gets/loses network authority over this actor
 ---@overload fun(event_name: "Spawn", callback: fun(self: Actor)) @Triggered when an Entity is spawned/created
 ---@overload fun(event_name: "ValueChange", callback: fun(self: Actor, key: string, value: any)) @Triggered when an Entity has a value changed with <code>:SetValue()</code>
@@ -599,7 +655,7 @@ Billboard = {}
 ---Calls the original Billboard Constructor. Call this from an inherited Class' <code>Constructor</code> through <code>self.Super:Constructor(...)</code>. See the <a href="https://docs.nanos-world.com/docs/core-concepts/scripting/inheriting-classes">Inheriting System</a>
 ---@param location Vector @World location to spawn at
 ---@param material_asset string @The Material to render
----@param size? Vector2D @Size in pixels (Default: Vector2D(32, 32))
+---@param size? Vector2D @Half size of the Billboard, X is the width and Y the height (before 1.166.0 they were swapped). In units, or in screen space if size_in_screen_space is true (Default: Vector2D(32, 32))
 ---@param size_in_screen_space? boolean @Size is in Screen or World Space (Default: false)
 function Billboard:Constructor(location, material_asset, size, size_in_screen_space) end
 
@@ -615,6 +671,20 @@ function Billboard:Constructor(location, material_asset, size, size_in_screen_sp
 ---@param custom_values? table @An optional table with custom values to be set in the inherited class table (Default: {})
 ---@return Billboard.Inherited @The new Class table, inheriting from Billboard
 function Billboard.Inherit(name, custom_values) end
+
+---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/both.png" height="21"> <b>[Client/Server Side]</b>
+---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/base-classes/entity#static-function-getall">docs</a>
+---
+---Returns a table containing all Entities of the class this is called on
+---@return Billboard[] @Copy of table containing all Entities
+function Billboard.GetAll() end
+
+---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/both.png" height="21"> <b>[Client/Server Side]</b>
+---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/base-classes/entity#static-function-getpairs">docs</a>
+---
+---Returns an iterator with all Entities of this class to be used with <code>pairs()</code>.<br/><br/>This is a more performant method than <code>GetAll()</code>, as it will return the iterator to access the Entities directly instead of creating and returning a copy of the Entities table.<br><br><b>Note:</b> Destroying Entities from inside a <code>GetPairs()</code> loop will cause the iterable to change size during the process. If you want to loop-and-destroy, please use <code>GetAll()</code>.
+---@return EntityIterator<Billboard> @Iterator with all Entities of this class
+function Billboard.GetPairs() end
 
 ---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/both.png" height="21"> <b>[Client/Server Side]</b>
 ---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/blueprint">docs</a>
@@ -649,6 +719,20 @@ function Blueprint:Constructor(location, rotation, blueprint_asset, collision_ty
 ---@return Blueprint.Inherited @The new Class table, inheriting from Blueprint
 function Blueprint.Inherit(name, custom_values) end
 
+---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/both.png" height="21"> <b>[Client/Server Side]</b>
+---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/base-classes/entity#static-function-getall">docs</a>
+---
+---Returns a table containing all Entities of the class this is called on
+---@return Blueprint[] @Copy of table containing all Entities
+function Blueprint.GetAll() end
+
+---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/both.png" height="21"> <b>[Client/Server Side]</b>
+---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/base-classes/entity#static-function-getpairs">docs</a>
+---
+---Returns an iterator with all Entities of this class to be used with <code>pairs()</code>.<br/><br/>This is a more performant method than <code>GetAll()</code>, as it will return the iterator to access the Entities directly instead of creating and returning a copy of the Entities table.<br><br><b>Note:</b> Destroying Entities from inside a <code>GetPairs()</code> loop will cause the iterable to change size during the process. If you want to loop-and-destroy, please use <code>GetAll()</code>.
+---@return EntityIterator<Blueprint> @Iterator with all Entities of this class
+function Blueprint.GetPairs() end
+
 ---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/client-only.png" height="21"> <b>[Client Side]</b>
 ---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/blueprint#function-bindblueprinteventdispatcher">docs</a>
 ---
@@ -661,7 +745,7 @@ function Blueprint:BindBlueprintEventDispatcher(dispatcher_name, callback) end
 ---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/both.png" height="21"> <b>[Client/Server Side]</b>
 ---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/blueprint#function-callblueprintevent">docs</a>
 ---
----Calls a Blueprint Event or Function<br/>Returns all Function return values on <strong>Client Side</strong>
+---Calls a Blueprint Event or Function.<br/><br/>Returns all Function return values on <strong>Client Side</strong>
 ---@param event_name string @Event or Function name
 ---@param ...? any @Sequence of arguments to pass to the event (Default: nil)
 ---@return any... @the function return values
@@ -723,10 +807,24 @@ function Cable:Constructor(location, enable_visuals, spawn_mode) end
 ---@return Cable.Inherited @The new Class table, inheriting from Cable
 function Cable.Inherit(name, custom_values) end
 
+---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/both.png" height="21"> <b>[Client/Server Side]</b>
+---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/base-classes/entity#static-function-getall">docs</a>
+---
+---Returns a table containing all Entities of the class this is called on
+---@return Cable[] @Copy of table containing all Entities
+function Cable.GetAll() end
+
+---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/both.png" height="21"> <b>[Client/Server Side]</b>
+---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/base-classes/entity#static-function-getpairs">docs</a>
+---
+---Returns an iterator with all Entities of this class to be used with <code>pairs()</code>.<br/><br/>This is a more performant method than <code>GetAll()</code>, as it will return the iterator to access the Entities directly instead of creating and returning a copy of the Entities table.<br><br><b>Note:</b> Destroying Entities from inside a <code>GetPairs()</code> loop will cause the iterable to change size during the process. If you want to loop-and-destroy, please use <code>GetAll()</code>.
+---@return EntityIterator<Cable> @Iterator with all Entities of this class
+function Cable.GetPairs() end
+
 ---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/server-only.png" height="21"> <b>[Server Side]</b>
 ---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/cable#function-attachendto">docs</a>
 ---
----Attaches the end of this cable to another Actor at a specific bone or relative location. For optimization, it is recommended to be the last method to call when setting up the cable.<br/><br/>Note¹: You can attach the end only, and the start will fixed at the Cable's location.<br/><br/>Note²: If no linear limit is set, the entity will be snapped to the other actor. Alternatively you can keep a physics constraint offset by passing it as parameter.
+---Attaches the end of this cable to another Actor at a specific bone or relative location.<br/><br/>For optimization, it is recommended to be the last method to call when setting up the cable.<br/><br/>Note¹: You can attach the end only, and the start will fixed at the Cable's location.<br/><br/>Note²: If no linear limit is set, the entity will be snapped to the other actor. Alternatively you can keep a physics constraint offset by passing it as parameter.
 ---@param other Actor @The Actor to attach to
 ---@param relative_location? Vector @Offset relative to the Actor or bone (Default: Vector(0, 0, 0))
 ---@param bone_name? string @Which bone to attach to. If empty it will be attached to the Actor, otherwise to the Mesh at the bone/socket (Default: "")
@@ -737,7 +835,7 @@ function Cable:AttachEndTo(other, relative_location, bone_name, constraint_offse
 ---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/server-only.png" height="21"> <b>[Server Side]</b>
 ---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/cable#function-attachstartto">docs</a>
 ---
----Attaches the beginning of this cable to another Actor at a specific bone or relative location. For optimization, it is recommended attaching start first if you wish to attach both start and end, to avoid double calculations.
+---Attaches the beginning of this cable to another Actor at a specific bone or relative location.<br/><br/>For optimization, it is recommended attaching start first if you wish to attach both start and end, to avoid double calculations.
 ---@param other Actor @The Actor to attach to
 ---@param relative_location? Vector @Offset relative to the Actor or bone (Default: Vector(0, 0, 0))
 ---@param bone_name? string @Which bone to attach to. If empty it will be attached to the Actor, otherwise to the Mesh at the bone/socket (Default: "")
@@ -769,6 +867,13 @@ function Cable:GetAttachedEndTo() end
 ---Gets the Actor attached to Start
 ---@return Actor? @Actor attached to Start
 function Cable:GetAttachedStartTo() end
+
+---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/both.png" height="21"> <b>[Client/Server Side]</b>
+---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/cable#function-isvisible">docs</a>
+---
+---Returns true if this cable is visible
+---@return boolean @Whether this cable is visible
+function Cable:IsVisible() end
 
 ---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/server-only.png" height="21"> <b>[Server Side]</b>
 ---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/cable#function-setangularlimits">docs</a>
@@ -841,7 +946,7 @@ function Cable:SetForces(force, gravity_scale) end
 ---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/server-only.png" height="21"> <b>[Server Side]</b>
 ---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/cable#function-setlinearlimits">docs</a>
 ---
----Sets the Physics Linear Limits of this cable. If use_soft_constraint is enabled, then stiffness and damping will be used, otherwise restitution will be used.<br/><br/>Note: this method must be called before attaching any cable end.
+---Sets the Physics Linear Limits of this cable.<br/><br/>If use_soft_constraint is enabled, then stiffness and damping will be used, otherwise restitution will be used.<br/><br/>Note: this method must be called before attaching any cable end.
 ---@param x_motion ConstraintMotion @Indicates the linear constraint applied along the X-axis. Free implies no constraint at all. Locked implies no movement along X is allowed. Limited implies the distance in the joint along all active axes must be less than the Distance provided
 ---@param y_motion ConstraintMotion @Indicates the linear constraint applied along the Y-axis. Free implies no constraint at all. Locked implies no movement along Y is allowed. Limited implies the distance in the joint along all active axes must be less than the Distance provided
 ---@param z_motion ConstraintMotion @Indicates the linear constraint applied along theZX-axis. Free implies no constraint at all. Locked implies no movement along Z is allowed. Limited implies the distance in the joint along all active axes must be less than the Distance provided
@@ -890,6 +995,13 @@ function Cable:SetPhysicsConstraintSettings(disable_collision) end
 ---@param tile_material integer @How many times to repeat the material along the length of the cable. Default is 1
 function Cable:SetRenderingSettings(width, num_sides, tile_material) end
 
+---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/both.png" height="21"> <b>[Client/Server Side]</b>
+---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/cable#function-setvisibility">docs</a>
+---
+---Sets whether the cable is visible or not (visuals only, the constraint keeps working)
+---@param is_visible boolean @Whether the cable is visible or not
+function Cable:SetVisibility(is_visible) end
+
 ---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/client-only.png" height="21"> <b>[Client Side]</b>
 ---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/canvas">docs</a>
 ---<b>Constructors:</b> <a href="https://docs.nanos-world.com/docs/scripting-reference/classes/canvas#constructor-default-constructor">Default Constructor</a>
@@ -927,6 +1039,20 @@ function Canvas:Constructor(is_visible, clear_color, auto_repaint_rate, should_c
 ---@return Canvas.Inherited @The new Class table, inheriting from Canvas
 function Canvas.Inherit(name, custom_values) end
 
+---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/both.png" height="21"> <b>[Client/Server Side]</b>
+---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/base-classes/entity#static-function-getall">docs</a>
+---
+---Returns a table containing all Entities of the class this is called on
+---@return Canvas[] @Copy of table containing all Entities
+function Canvas.GetAll() end
+
+---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/both.png" height="21"> <b>[Client/Server Side]</b>
+---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/base-classes/entity#static-function-getpairs">docs</a>
+---
+---Returns an iterator with all Entities of this class to be used with <code>pairs()</code>.<br/><br/>This is a more performant method than <code>GetAll()</code>, as it will return the iterator to access the Entities directly instead of creating and returning a copy of the Entities table.<br><br><b>Note:</b> Destroying Entities from inside a <code>GetPairs()</code> loop will cause the iterable to change size during the process. If you want to loop-and-destroy, please use <code>GetAll()</code>.
+---@return EntityIterator<Canvas> @Iterator with all Entities of this class
+function Canvas.GetPairs() end
+
 ---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/client-only.png" height="21"> <b>[Client Side]</b>
 ---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/canvas#function-clear">docs</a>
 ---
@@ -937,7 +1063,7 @@ function Canvas:Clear(clear_color) end
 ---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/client-only.png" height="21"> <b>[Client Side]</b>
 ---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/canvas#function-drawbox">docs</a>
 ---
----Draws an unfilled box on the Canvas<br/><br/>This method can only be called from inside <code>Update</code> event
+---Draws an unfilled box on the Canvas.<br/><br/>This method can only be called from inside <code>Update</code> event
 ---@param screen_position Vector2D @Position on the Canvas, in pixels
 ---@param screen_size Vector2D @Size on the Canvas, in pixels
 ---@param thickness number @Line thickness
@@ -948,7 +1074,7 @@ function Canvas:DrawBox(screen_position, screen_size, thickness, render_color, b
 ---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/client-only.png" height="21"> <b>[Client Side]</b>
 ---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/canvas#function-drawline">docs</a>
 ---
----Draws a line on the Canvas<br/><br/>This method can only be called from inside <code>Update</code> event
+---Draws a line on the Canvas.<br/><br/>This method can only be called from inside <code>Update</code> event
 ---@param screen_position_a Vector2D @Start position of the line, in pixels
 ---@param screen_position_b Vector2D @End position of the line, in pixels
 ---@param thickness number @Line thickness
@@ -959,7 +1085,7 @@ function Canvas:DrawLine(screen_position_a, screen_position_b, thickness, render
 ---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/client-only.png" height="21"> <b>[Client Side]</b>
 ---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/canvas#function-drawmaterial">docs</a>
 ---
----Draws a Material on the Canvas<br/><br/>This method can only be called from inside <code>Update</code> event<br/><br/><strong>Note:</strong> Due how Unreal handles Render Targets, drawing material on Canvas result on a weird translucent effect. Hope in the future to be improved.
+---Draws a Material on the Canvas.<br/><br/>This method can only be called from inside <code>Update</code> event<br/><br/><strong>Note:</strong> Due how Unreal handles Render Targets, drawing material on Canvas result on a weird translucent effect. Hope in the future to be improved.
 ---@param material_path string @The Material asset to use
 ---@param screen_position Vector2D @Position on the Canvas, in pixels
 ---@param screen_size Vector2D @Size on the Canvas, in pixels
@@ -973,7 +1099,7 @@ function Canvas:DrawMaterial(material_path, screen_position, screen_size, coordi
 ---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/client-only.png" height="21"> <b>[Client Side]</b>
 ---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/canvas#function-drawmaterialfromscenecapture">docs</a>
 ---
----Draws a SceneCapture on the Canvas<br/><br/>This method can only be called from inside <code>Update</code> event<br/><br/><strong>Note:</strong> Due how Unreal handles Render Targets, drawing material on Canvas result on a weird translucent effect. Hope in the future to be improved.
+---Draws a SceneCapture on the Canvas.<br/><br/>This method can only be called from inside <code>Update</code> event<br/><br/><strong>Note:</strong> Due how Unreal handles Render Targets, drawing material on Canvas result on a weird translucent effect. Hope in the future to be improved.
 ---@param scenecapture_entity SceneCapture @The SceneCapture to draw
 ---@param screen_position Vector2D @Position on the Canvas, in pixels
 ---@param screen_size Vector2D @Size on the Canvas, in pixels
@@ -987,7 +1113,7 @@ function Canvas:DrawMaterialFromSceneCapture(scenecapture_entity, screen_positio
 ---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/client-only.png" height="21"> <b>[Client Side]</b>
 ---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/canvas#function-drawmaterialfromwebui">docs</a>
 ---
----Draws a WebUI on the Canvas<br/><br/>This method can only be called from inside <code>Update</code> event<br/><br/><strong>Note:</strong> Due how Unreal handles Render Targets, drawing material on Canvas result on a weird translucent effect. Hope in the future to be improved.
+---Draws a WebUI on the Canvas.<br/><br/>This method can only be called from inside <code>Update</code> event<br/><br/><strong>Note:</strong> Due how Unreal handles Render Targets, drawing material on Canvas result on a weird translucent effect. Hope in the future to be improved.
 ---@param webui_entity WebUI @The WebUI to draw
 ---@param screen_position Vector2D @Position on the Canvas, in pixels
 ---@param screen_size Vector2D @Size on the Canvas, in pixels
@@ -1001,7 +1127,7 @@ function Canvas:DrawMaterialFromWebUI(webui_entity, screen_position, screen_size
 ---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/client-only.png" height="21"> <b>[Client Side]</b>
 ---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/canvas#function-drawpolygon">docs</a>
 ---
----Draws a N-Polygon on the Canvas<br/><br/>This method can only be called from inside <code>Update</code> event
+---Draws a N-Polygon on the Canvas.<br/><br/>This method can only be called from inside <code>Update</code> event
 ---@param texture_path string @Pass empty to use default white Texture
 ---@param screen_position Vector2D @Position on the Canvas, in pixels
 ---@param radius? Vector2D @Radius of the polygon on each axis, in pixels (Default: Vector2D(1, 1))
@@ -1013,7 +1139,7 @@ function Canvas:DrawPolygon(texture_path, screen_position, radius, number_of_sid
 ---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/client-only.png" height="21"> <b>[Client Side]</b>
 ---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/canvas#function-drawrect">docs</a>
 ---
----Draws a fille Rect on the Canvas<br/><br/>This method can only be called from inside <code>Update</code> event
+---Draws a filled Rect on the Canvas.<br/><br/>Draws a fille Rect on the Canvas<br/><br/>This method can only be called from inside <code>Update</code> event
 ---@param texture_path string @Pass empty to use default white Texture
 ---@param screen_position Vector2D @Position on the Canvas, in pixels
 ---@param screen_size Vector2D @Size on the Canvas, in pixels
@@ -1024,7 +1150,7 @@ function Canvas:DrawRect(texture_path, screen_position, screen_size, render_colo
 ---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/client-only.png" height="21"> <b>[Client Side]</b>
 ---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/canvas#function-drawtext">docs</a>
 ---
----Draws a Text on the Canvas<br/><br/>This method can only be called from inside <code>Update</code> event<br/><br/>Shadow and Outline won't work properly with Transparent <code>clear_color</code>
+---Draws a Text on the Canvas.<br/><br/>This method can only be called from inside <code>Update</code> event<br/><br/>Shadow and Outline won't work properly with Transparent <code>clear_color</code>
 ---@param text string @The text to draw
 ---@param screen_position Vector2D @Position on the Canvas, in pixels
 ---@param font_type? FontType @Font to use (Default: FontType.Roboto)
@@ -1042,7 +1168,7 @@ function Canvas:DrawText(text, screen_position, font_type, font_size, text_color
 ---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/client-only.png" height="21"> <b>[Client Side]</b>
 ---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/canvas#function-drawtexture">docs</a>
 ---
----Draws a Texture on the Canvas<br/><br/>This method can only be called from inside <code>Update</code> event
+---Draws a Texture on the Canvas.<br/><br/>This method can only be called from inside <code>Update</code> event
 ---@param texture_path string @The image to draw
 ---@param screen_position Vector2D @Position on the Canvas, in pixels
 ---@param screen_size Vector2D @Size on the Canvas, in pixels
@@ -1064,7 +1190,7 @@ function Canvas:GetSize() end
 ---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/client-only.png" height="21"> <b>[Client Side]</b>
 ---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/canvas#function-repaint">docs</a>
 ---
----Forces the repaint, this will trigger Update event
+---Forces the repaint.<br/><br/>This triggers the Update event
 function Canvas:Repaint() end
 
 ---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/client-only.png" height="21"> <b>[Client Side]</b>
@@ -1078,7 +1204,7 @@ function Canvas:Resize(width, height) end
 ---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/client-only.png" height="21"> <b>[Client Side]</b>
 ---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/canvas#function-setautorepaintrate">docs</a>
 ---
----Sets it to -1 to stop auto repainting or 0 to repaint every frame
+---Sets the repaint rate.<br/><br/>Sets it to -1 to stop auto repainting or 0 to repaint every frame
 ---@param auto_repaint_rate number @Repaint interval in seconds, 0 to repaint every frame or -1 to stop auto repainting
 function Canvas:SetAutoRepaintRate(auto_repaint_rate) end
 
@@ -1169,8 +1295,8 @@ Character = {}
 ---@param collision_type? CollisionType @Collision profile of this Actor (Default: CollisionType.Auto)
 ---@param gravity_enabled? boolean @Whether gravity affects this Actor (Default: true)
 ---@param max_health? integer @Current / Max Health (Default: 100)
----@param death_sound? string @Played when Character dies (Default: nanos-world::A_Male_01_Death)
----@param pain_sound? string @Played when Character takes damage (Default: nanos-world::A_Male_01_Pain)
+---@param death_sound? string @Played when Character dies, pass an empty string for no sound (Default: nanos-world::A_Male_01_Death)
+---@param pain_sound? string @Played when Character takes damage, pass an empty string for no sound (Default: nanos-world::A_Male_01_Pain)
 ---@param spawn_mode? SpawnMode @Pass <code>SpawnMode.AfterConstructor</code> or <code>SpawnMode.Manual</code> to avoid immediately sending the entity to clients and improve performance when you want to configure it by setting several configs. Must call <code>FinishSpawn()</code> after all (Default: SpawnMode.Immediate)
 function Character:Constructor(location, rotation, skeletal_mesh_asset, collision_type, gravity_enabled, max_health, death_sound, pain_sound, spawn_mode) end
 
@@ -1188,10 +1314,18 @@ function Character:Constructor(location, rotation, skeletal_mesh_asset, collisio
 function Character.Inherit(name, custom_values) end
 
 ---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/both.png" height="21"> <b>[Client/Server Side]</b>
----<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/character#function-clearmorphtargets">docs</a>
+---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/base-classes/entity#static-function-getall">docs</a>
 ---
----Clear all Morph Target that are set to this Mesh
-function Character:ClearMorphTargets() end
+---Returns a table containing all Entities of the class this is called on
+---@return Character[] @Copy of table containing all Entities
+function Character.GetAll() end
+
+---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/both.png" height="21"> <b>[Client/Server Side]</b>
+---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/base-classes/entity#static-function-getpairs">docs</a>
+---
+---Returns an iterator with all Entities of this class to be used with <code>pairs()</code>.<br/><br/>This is a more performant method than <code>GetAll()</code>, as it will return the iterator to access the Entities directly instead of creating and returning a copy of the Entities table.<br><br><b>Note:</b> Destroying Entities from inside a <code>GetPairs()</code> loop will cause the iterable to change size during the process. If you want to loop-and-destroy, please use <code>GetAll()</code>.
+---@return EntityIterator<Character> @Iterator with all Entities of this class
+function Character.GetPairs() end
 
 ---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/server-only.png" height="21"> <b>[Server Side]</b>
 ---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/character#function-drop">docs</a>
@@ -1206,13 +1340,6 @@ function Character:Drop() end
 ---@param vehicle Vehicle @The Vehicle
 ---@param seat? integer @Seat index to enter, 0 is the driver seat (Default: 0)
 function Character:EnterVehicle(vehicle, seat) end
-
----<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/client-only.png" height="21"> <b>[Client Side]</b>
----<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/character#function-getallmorphtargetnames">docs</a>
----
----Returns a table with all morph targets available
----@return string[] @table with all morph targets available
-function Character:GetAllMorphTargetNames() end
 
 ---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/both.png" height="21"> <b>[Client/Server Side]</b>
 ---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/character#function-getcameramode">docs</a>
@@ -1327,14 +1454,6 @@ function Character:GetGrabbedProp() end
 function Character:GetImpactDamageTaken() end
 
 ---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/both.png" height="21"> <b>[Client/Server Side]</b>
----<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/character#function-getmorphtarget">docs</a>
----
----Returns the value of a Morph Target
----@param name string @Morph Target Name
----@return number @value of the Morph Target
-function Character:GetMorphTarget(name) end
-
----<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/both.png" height="21"> <b>[Client/Server Side]</b>
 ---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/character#function-getpicked">docs</a>
 ---
 ---Gets the Pickable if picking up
@@ -1375,13 +1494,6 @@ function Character:GetStanceMode() end
 ---Gets the Swimming Mode
 ---@return SwimmingMode @Swimming Mode
 function Character:GetSwimmingMode() end
-
----<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/both.png" height="21"> <b>[Client/Server Side]</b>
----<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/character#function-getteam">docs</a>
----
----Gets the Team of this Character
----@return integer @The Team, 0 means no team
-function Character:GetTeam() end
 
 ---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/both.png" height="21"> <b>[Client/Server Side]</b>
 ---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/character#function-getvehicle">docs</a>
@@ -1516,27 +1628,12 @@ function Character:SetAirControl(air_control, boost_multiplier, boost_velocity_t
 function Character:SetAnimationIdleWalkRunCrouching(blend_space_path, enable_turn_in_place) end
 
 ---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/server-only.png" height="21"> <b>[Server Side]</b>
----<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/character#function-setanimationidlewalkrunproning">docs</a>
----
----Sets the Blend Space (2D) Animation for Proning<br/><br/>Horizontal Axis stands for Speed X and Vertical Axis for Speed Y
----@param blend_space_path string @The new Blend Space (2D) Animation for Proning
-function Character:SetAnimationIdleWalkRunProning(blend_space_path) end
-
----<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/server-only.png" height="21"> <b>[Server Side]</b>
 ---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/character#function-setanimationidlewalkrunstanding">docs</a>
 ---
----Sets the Blend Space (2D) Animation for Standing<br/><br/>Horizontal Axis stands for Speed X and Vertical Axis for Speed Y
+---Sets the Blend Space (2D) Animation for Standing.<br/><br/>Horizontal Axis stands for Speed X and Vertical Axis for Speed Y
 ---@param blend_space_path string @The Blend Space (2D) asset
 ---@param enable_turn_in_place? boolean @Whether the Character plays turn-in-place animations when rotating while idle (Default: false)
 function Character:SetAnimationIdleWalkRunStanding(blend_space_path, enable_turn_in_place) end
-
----<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/server-only.png" height="21"> <b>[Server Side]</b>
----<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/character#function-setanimationstransitioncrouchingproning">docs</a>
----
----Sets the Transition Animation between Crouching and Proning
----@param crouching_to_proning string @Animation played when going prone
----@param proning_to_crouching string @Animation played when getting up from prone
-function Character:SetAnimationsTransitionCrouchingProning(crouching_to_proning, proning_to_crouching) end
 
 ---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/server-only.png" height="21"> <b>[Server Side]</b>
 ---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/character#function-setanimationstransitionstandingcrouching">docs</a>
@@ -1549,7 +1646,7 @@ function Character:SetAnimationsTransitionStandingCrouching(standing_to_crouchin
 ---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/server-only.png" height="21"> <b>[Server Side]</b>
 ---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/character#function-setcameramode">docs</a>
 ---
----Sets the Camera Mode (i.e. Only TPS, FPS or if allow both)<br/><br/>Using FPSOnly CameraMode on AI will lock his body rotation (when using LookAt)
+---Sets the Camera Mode.<br/><br/>It can allow only TPS, only FPS or both.<br/><br/>Using FPSOnly CameraMode on AI will lock his body rotation (when using LookAt)
 ---@param camera_mode CameraMode @The new Camera Mode
 function Character:SetCameraMode(camera_mode) end
 
@@ -1620,7 +1717,7 @@ function Character:SetCanUsePickables(can_use) end
 ---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/character#function-setdeathsound">docs</a>
 ---
 ---Changes the Death sound when Character dies
----@param sound_asset string @The new Death sound when Character dies
+---@param sound_asset? string @The new Death sound when Character dies, pass nil or an empty string for no sound (Default: nil)
 function Character:SetDeathSound(sound_asset) end
 
 ---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/server-only.png" height="21"> <b>[Server Side]</b>
@@ -1654,7 +1751,7 @@ function Character:SetGaitMode(gait_mode) end
 ---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/server-only.png" height="21"> <b>[Server Side]</b>
 ---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/character#function-sethighfallingtime">docs</a>
 ---
----Sets time elapsed until automatically transition to HighFalling state (from SmallFalling) in seconds<br/><br/>Set it to -1 to never enter HighFalling time and consequently do not ragdoll when falling
+---Sets time to transition to HighFalling state.<br/><br/>Sets time elapsed until automatically transition to HighFalling state (from SmallFalling) in seconds<br/><br/>Set it to -1 to never enter HighFalling time and consequently do not ragdoll when falling
 ---@param time number @Default is 1 second
 function Character:SetHighFallingTime(time) end
 
@@ -1686,26 +1783,18 @@ function Character:SetInvulnerable(is_invulnerable) end
 ---@param skeletal_mesh_asset string @The new Skeletal Mesh asset
 function Character:SetMesh(skeletal_mesh_asset) end
 
----<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/both.png" height="21"> <b>[Client/Server Side]</b>
----<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/character#function-setmorphtarget">docs</a>
----
----Sets the value of a Morph Target
----@param name string @Morph Target Name
----@param value number @The Morph Target weight, usually from 0 to 1
-function Character:SetMorphTarget(name, value) end
-
 ---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/server-only.png" height="21"> <b>[Server Side]</b>
 ---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/character#function-setpainsound">docs</a>
 ---
 ---Changes the Pain sound when Character takes damage
----@param sound_asset string @The new Pain sound when Character takes damage
+---@param sound_asset? string @The new Pain sound when Character takes damage, pass nil or an empty string for no sound (Default: nil)
 function Character:SetPainSound(sound_asset) end
 
 ---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/server-only.png" height="21"> <b>[Server Side]</b>
 ---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/character#function-setparachutetexture">docs</a>
 ---
 ---Changes the texture of the Character's parachute
----@param texture string @The new Parachute Texture
+---@param texture? string @The new Parachute Texture, pass nil or an empty string to restore the default Texture (Default: nil)
 function Character:SetParachuteTexture(texture) end
 
 ---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/both.png" height="21"> <b>[Client/Server Side]</b>
@@ -1727,7 +1816,7 @@ function Character:SetPhysicalAnimationSettings(bone, include_self, is_local_sim
 ---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/character#function-setphysicsasset">docs</a>
 ---
 ---Sets the Physics Asset for the Character
----@param physics_asset string @The new Physics Asset for the Character
+---@param physics_asset? string @The new Physics Asset for the Character, pass nil or an empty string to restore the Mesh's own Physics Asset (Default: nil)
 function Character:SetPhysicsAsset(physics_asset) end
 
 ---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/server-only.png" height="21"> <b>[Server Side]</b>
@@ -1740,7 +1829,7 @@ function Character:SetPunchDamage(punch_damage) end
 ---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/server-only.png" height="21"> <b>[Server Side]</b>
 ---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/character#function-setradialdamagetoragdoll">docs</a>
 ---
----Set the minimum radial damage taken (e.g. explosions) to enter in ragdoll mode.<br/><br/>Setting to -1 will make the Character never enter ragdoll mode when getting radial damage
+---Set the minimum radial damage (e.g. explosions) taken to enter in ragdoll mode.<br/><br/>Set the minimum radial damage taken (e.g. explosions) to enter in ragdoll mode.<br/><br/>Setting to -1 will make the Character never enter ragdoll mode when getting radial damage
 ---@param damage integer @Default is 50
 function Character:SetRadialDamageToRagdoll(damage) end
 
@@ -1782,16 +1871,9 @@ function Character:SetSpeedMultiplier(speed_multiplier) end
 ---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/server-only.png" height="21"> <b>[Server Side]</b>
 ---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/character#function-setstancemode">docs</a>
 ---
----Sets the Stance Mode (standing, crouching or proning)
+---Sets the Stance Mode (standing or crouching)
 ---@param stance_mode StanceMode @The new Stance Mode
 function Character:SetStanceMode(stance_mode) end
-
----<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/server-only.png" height="21"> <b>[Server Side]</b>
----<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/character#function-setteam">docs</a>
----
----Sets a Team which will disable damaging same Team Members
----@param team integer @0 is neutral and default
-function Character:SetTeam(team) end
 
 ---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/network-authority.png" height="21"> <b>[Network Authority]</b>
 ---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/character#function-setviewmode">docs</a>
@@ -1837,7 +1919,7 @@ function Character:UnGrabProp() end
 ---@overload fun(event_name: "DimensionChange", callback: fun(self: Character, old_dimension: integer, new_dimension: integer)): fun(self: Character, old_dimension: integer, new_dimension: integer) @Triggered when an Actor changes its dimension
 ---@overload fun(event_name: "Drop", callback: fun(self: Character, object: Pickable, triggered_by_player: boolean)): fun(self: Character, object: Pickable, triggered_by_player: boolean) @When Character drops the currently picked up Pickable
 ---@overload fun(event_name: "EnterVehicle", callback: fun(self: Character, vehicle: Vehicle, seat_index: integer)): fun(self: Character, vehicle: Vehicle, seat_index: integer) @When Character enters a vehicle
----@overload fun(event_name: "EnterWater", callback: fun(self: Character)): fun(self: Character) @Triggered when an Actor enters a water body. Only Actors that simulate physics trigger this event, such as <code>Prop</code>, <code>Vehicle</code>, <code>Pickables</code> and <code>Character</code> only.
+---@overload fun(event_name: "EnterWater", callback: fun(self: Character)): fun(self: Character) @Triggered when an Actor enters a water body.<br/><br/>Only Actors that simulate physics trigger this event, such as <code>Prop</code>, <code>Vehicle</code>, <code>Pickables</code> and <code>Character</code> only.
 ---@overload fun(event_name: "FallingModeChange", callback: fun(self: Character, old_state: FallingMode, new_state: FallingMode)): fun(self: Character, old_state: FallingMode, new_state: FallingMode) @Called when FallingMode changes
 ---@overload fun(event_name: "Fire", callback: fun(self: Character, weapon: Weapon)): fun(self: Character, weapon: Weapon) @When Character fires a Weapon
 ---@overload fun(event_name: "GaitModeChange", callback: fun(self: Character, old_state: GaitMode, new_state: GaitMode)): fun(self: Character, old_state: GaitMode, new_state: GaitMode) @Called when GaitMode changes
@@ -1846,7 +1928,7 @@ function Character:UnGrabProp() end
 ---@overload fun(event_name: "Highlight", callback: fun(self: Character, is_highlighted: boolean, object: Prop|Pickable)): fun(self: Character, is_highlighted: boolean, object: Prop|Pickable) @When Character highlights/looks at a Prop or a Pickable
 ---@overload fun(event_name: "Interact", callback: fun(self: Character, object: Prop|Pickable): boolean?): fun(self: Character, object: Prop|Pickable): boolean? @Triggered when a Character interacts with a Prop or Pickable
 ---@overload fun(event_name: "LeaveVehicle", callback: fun(self: Character, vehicle: Vehicle, seat_index: integer)): fun(self: Character, vehicle: Vehicle, seat_index: integer) @When Character leaves a vehicle
----@overload fun(event_name: "LeaveWater", callback: fun(self: Character)): fun(self: Character) @Triggered when an Actor leaves a water body. Only Actors that simulate physics trigger this event, such as <code>Prop</code>, <code>Vehicle</code>, <code>Pickables</code> and <code>Character</code> only.
+---@overload fun(event_name: "LeaveWater", callback: fun(self: Character)): fun(self: Character) @Triggered when an Actor leaves a water body.<br/><br/>Only Actors that simulate physics trigger this event, such as <code>Prop</code>, <code>Vehicle</code>, <code>Pickables</code> and <code>Character</code> only.
 ---@overload fun(event_name: "MoveComplete", callback: fun(self: Character, succeeded: boolean)): fun(self: Character, succeeded: boolean) @Called when AI reaches its destination, or when it fails
 ---@overload fun(event_name: "NetworkAuthorityChange", callback: fun(self: Character, is_network_authority: boolean)): fun(self: Character, is_network_authority: boolean) @Triggered when the local Player gets/loses network authority over this actor
 ---@overload fun(event_name: "PickUp", callback: fun(self: Character, object: Pickable)): fun(self: Character, object: Pickable) @When Character picks up anything
@@ -1885,7 +1967,7 @@ function Character.Subscribe(event_name, callback) end
 ---@overload fun(self: Character, event_name: "DimensionChange", callback: fun(self: Character, old_dimension: integer, new_dimension: integer)): fun(self: Character, old_dimension: integer, new_dimension: integer) @Triggered when an Actor changes its dimension
 ---@overload fun(self: Character, event_name: "Drop", callback: fun(self: Character, object: Pickable, triggered_by_player: boolean)): fun(self: Character, object: Pickable, triggered_by_player: boolean) @When Character drops the currently picked up Pickable
 ---@overload fun(self: Character, event_name: "EnterVehicle", callback: fun(self: Character, vehicle: Vehicle, seat_index: integer)): fun(self: Character, vehicle: Vehicle, seat_index: integer) @When Character enters a vehicle
----@overload fun(self: Character, event_name: "EnterWater", callback: fun(self: Character)): fun(self: Character) @Triggered when an Actor enters a water body. Only Actors that simulate physics trigger this event, such as <code>Prop</code>, <code>Vehicle</code>, <code>Pickables</code> and <code>Character</code> only.
+---@overload fun(self: Character, event_name: "EnterWater", callback: fun(self: Character)): fun(self: Character) @Triggered when an Actor enters a water body.<br/><br/>Only Actors that simulate physics trigger this event, such as <code>Prop</code>, <code>Vehicle</code>, <code>Pickables</code> and <code>Character</code> only.
 ---@overload fun(self: Character, event_name: "FallingModeChange", callback: fun(self: Character, old_state: FallingMode, new_state: FallingMode)): fun(self: Character, old_state: FallingMode, new_state: FallingMode) @Called when FallingMode changes
 ---@overload fun(self: Character, event_name: "Fire", callback: fun(self: Character, weapon: Weapon)): fun(self: Character, weapon: Weapon) @When Character fires a Weapon
 ---@overload fun(self: Character, event_name: "GaitModeChange", callback: fun(self: Character, old_state: GaitMode, new_state: GaitMode)): fun(self: Character, old_state: GaitMode, new_state: GaitMode) @Called when GaitMode changes
@@ -1894,7 +1976,7 @@ function Character.Subscribe(event_name, callback) end
 ---@overload fun(self: Character, event_name: "Highlight", callback: fun(self: Character, is_highlighted: boolean, object: Prop|Pickable)): fun(self: Character, is_highlighted: boolean, object: Prop|Pickable) @When Character highlights/looks at a Prop or a Pickable
 ---@overload fun(self: Character, event_name: "Interact", callback: fun(self: Character, object: Prop|Pickable): boolean?): fun(self: Character, object: Prop|Pickable): boolean? @Triggered when a Character interacts with a Prop or Pickable
 ---@overload fun(self: Character, event_name: "LeaveVehicle", callback: fun(self: Character, vehicle: Vehicle, seat_index: integer)): fun(self: Character, vehicle: Vehicle, seat_index: integer) @When Character leaves a vehicle
----@overload fun(self: Character, event_name: "LeaveWater", callback: fun(self: Character)): fun(self: Character) @Triggered when an Actor leaves a water body. Only Actors that simulate physics trigger this event, such as <code>Prop</code>, <code>Vehicle</code>, <code>Pickables</code> and <code>Character</code> only.
+---@overload fun(self: Character, event_name: "LeaveWater", callback: fun(self: Character)): fun(self: Character) @Triggered when an Actor leaves a water body.<br/><br/>Only Actors that simulate physics trigger this event, such as <code>Prop</code>, <code>Vehicle</code>, <code>Pickables</code> and <code>Character</code> only.
 ---@overload fun(self: Character, event_name: "MoveComplete", callback: fun(self: Character, succeeded: boolean)): fun(self: Character, succeeded: boolean) @Called when AI reaches its destination, or when it fails
 ---@overload fun(self: Character, event_name: "NetworkAuthorityChange", callback: fun(self: Character, is_network_authority: boolean)): fun(self: Character, is_network_authority: boolean) @Triggered when the local Player gets/loses network authority over this actor
 ---@overload fun(self: Character, event_name: "PickUp", callback: fun(self: Character, object: Pickable)): fun(self: Character, object: Pickable) @When Character picks up anything
@@ -1931,7 +2013,7 @@ function Character:Subscribe(event_name, callback) end
 ---@overload fun(self: Character, event_name: "DimensionChange", callback: fun(self: Character, old_dimension: integer, new_dimension: integer)) @Triggered when an Actor changes its dimension
 ---@overload fun(self: Character, event_name: "Drop", callback: fun(self: Character, object: Pickable, triggered_by_player: boolean)) @When Character drops the currently picked up Pickable
 ---@overload fun(self: Character, event_name: "EnterVehicle", callback: fun(self: Character, vehicle: Vehicle, seat_index: integer)) @When Character enters a vehicle
----@overload fun(self: Character, event_name: "EnterWater", callback: fun(self: Character)) @Triggered when an Actor enters a water body. Only Actors that simulate physics trigger this event, such as <code>Prop</code>, <code>Vehicle</code>, <code>Pickables</code> and <code>Character</code> only.
+---@overload fun(self: Character, event_name: "EnterWater", callback: fun(self: Character)) @Triggered when an Actor enters a water body.<br/><br/>Only Actors that simulate physics trigger this event, such as <code>Prop</code>, <code>Vehicle</code>, <code>Pickables</code> and <code>Character</code> only.
 ---@overload fun(self: Character, event_name: "FallingModeChange", callback: fun(self: Character, old_state: FallingMode, new_state: FallingMode)) @Called when FallingMode changes
 ---@overload fun(self: Character, event_name: "Fire", callback: fun(self: Character, weapon: Weapon)) @When Character fires a Weapon
 ---@overload fun(self: Character, event_name: "GaitModeChange", callback: fun(self: Character, old_state: GaitMode, new_state: GaitMode)) @Called when GaitMode changes
@@ -1940,7 +2022,7 @@ function Character:Subscribe(event_name, callback) end
 ---@overload fun(self: Character, event_name: "Highlight", callback: fun(self: Character, is_highlighted: boolean, object: Prop|Pickable)) @When Character highlights/looks at a Prop or a Pickable
 ---@overload fun(self: Character, event_name: "Interact", callback: fun(self: Character, object: Prop|Pickable): boolean?) @Triggered when a Character interacts with a Prop or Pickable
 ---@overload fun(self: Character, event_name: "LeaveVehicle", callback: fun(self: Character, vehicle: Vehicle, seat_index: integer)) @When Character leaves a vehicle
----@overload fun(self: Character, event_name: "LeaveWater", callback: fun(self: Character)) @Triggered when an Actor leaves a water body. Only Actors that simulate physics trigger this event, such as <code>Prop</code>, <code>Vehicle</code>, <code>Pickables</code> and <code>Character</code> only.
+---@overload fun(self: Character, event_name: "LeaveWater", callback: fun(self: Character)) @Triggered when an Actor leaves a water body.<br/><br/>Only Actors that simulate physics trigger this event, such as <code>Prop</code>, <code>Vehicle</code>, <code>Pickables</code> and <code>Character</code> only.
 ---@overload fun(self: Character, event_name: "MoveComplete", callback: fun(self: Character, succeeded: boolean)) @Called when AI reaches its destination, or when it fails
 ---@overload fun(self: Character, event_name: "NetworkAuthorityChange", callback: fun(self: Character, is_network_authority: boolean)) @Triggered when the local Player gets/loses network authority over this actor
 ---@overload fun(self: Character, event_name: "PickUp", callback: fun(self: Character, object: Pickable)) @When Character picks up anything
@@ -1978,7 +2060,7 @@ function Character:Unsubscribe(event_name, callback) end
 ---@overload fun(event_name: "DimensionChange", callback: fun(self: Character, old_dimension: integer, new_dimension: integer)) @Triggered when an Actor changes its dimension
 ---@overload fun(event_name: "Drop", callback: fun(self: Character, object: Pickable, triggered_by_player: boolean)) @When Character drops the currently picked up Pickable
 ---@overload fun(event_name: "EnterVehicle", callback: fun(self: Character, vehicle: Vehicle, seat_index: integer)) @When Character enters a vehicle
----@overload fun(event_name: "EnterWater", callback: fun(self: Character)) @Triggered when an Actor enters a water body. Only Actors that simulate physics trigger this event, such as <code>Prop</code>, <code>Vehicle</code>, <code>Pickables</code> and <code>Character</code> only.
+---@overload fun(event_name: "EnterWater", callback: fun(self: Character)) @Triggered when an Actor enters a water body.<br/><br/>Only Actors that simulate physics trigger this event, such as <code>Prop</code>, <code>Vehicle</code>, <code>Pickables</code> and <code>Character</code> only.
 ---@overload fun(event_name: "FallingModeChange", callback: fun(self: Character, old_state: FallingMode, new_state: FallingMode)) @Called when FallingMode changes
 ---@overload fun(event_name: "Fire", callback: fun(self: Character, weapon: Weapon)) @When Character fires a Weapon
 ---@overload fun(event_name: "GaitModeChange", callback: fun(self: Character, old_state: GaitMode, new_state: GaitMode)) @Called when GaitMode changes
@@ -1987,7 +2069,7 @@ function Character:Unsubscribe(event_name, callback) end
 ---@overload fun(event_name: "Highlight", callback: fun(self: Character, is_highlighted: boolean, object: Prop|Pickable)) @When Character highlights/looks at a Prop or a Pickable
 ---@overload fun(event_name: "Interact", callback: fun(self: Character, object: Prop|Pickable): boolean?) @Triggered when a Character interacts with a Prop or Pickable
 ---@overload fun(event_name: "LeaveVehicle", callback: fun(self: Character, vehicle: Vehicle, seat_index: integer)) @When Character leaves a vehicle
----@overload fun(event_name: "LeaveWater", callback: fun(self: Character)) @Triggered when an Actor leaves a water body. Only Actors that simulate physics trigger this event, such as <code>Prop</code>, <code>Vehicle</code>, <code>Pickables</code> and <code>Character</code> only.
+---@overload fun(event_name: "LeaveWater", callback: fun(self: Character)) @Triggered when an Actor leaves a water body.<br/><br/>Only Actors that simulate physics trigger this event, such as <code>Prop</code>, <code>Vehicle</code>, <code>Pickables</code> and <code>Character</code> only.
 ---@overload fun(event_name: "MoveComplete", callback: fun(self: Character, succeeded: boolean)) @Called when AI reaches its destination, or when it fails
 ---@overload fun(event_name: "NetworkAuthorityChange", callback: fun(self: Character, is_network_authority: boolean)) @Triggered when the local Player gets/loses network authority over this actor
 ---@overload fun(event_name: "PickUp", callback: fun(self: Character, object: Pickable)) @When Character picks up anything
@@ -2046,6 +2128,20 @@ function CharacterSimple:Constructor(location, rotation, mesh, custom_animation_
 ---@return CharacterSimple.Inherited @The new Class table, inheriting from CharacterSimple
 function CharacterSimple.Inherit(name, custom_values) end
 
+---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/both.png" height="21"> <b>[Client/Server Side]</b>
+---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/base-classes/entity#static-function-getall">docs</a>
+---
+---Returns a table containing all Entities of the class this is called on
+---@return CharacterSimple[] @Copy of table containing all Entities
+function CharacterSimple.GetAll() end
+
+---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/both.png" height="21"> <b>[Client/Server Side]</b>
+---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/base-classes/entity#static-function-getpairs">docs</a>
+---
+---Returns an iterator with all Entities of this class to be used with <code>pairs()</code>.<br/><br/>This is a more performant method than <code>GetAll()</code>, as it will return the iterator to access the Entities directly instead of creating and returning a copy of the Entities table.<br><br><b>Note:</b> Destroying Entities from inside a <code>GetPairs()</code> loop will cause the iterable to change size during the process. If you want to loop-and-destroy, please use <code>GetAll()</code>.
+---@return EntityIterator<CharacterSimple> @Iterator with all Entities of this class
+function CharacterSimple.GetPairs() end
+
 ---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/client-only.png" height="21"> <b>[Client Side]</b>
 ---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/charactersimple#function-bindanimationblueprinteventdispatcher">docs</a>
 ---
@@ -2058,7 +2154,7 @@ function CharacterSimple:BindAnimationBlueprintEventDispatcher(dispatcher_name, 
 ---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/both.png" height="21"> <b>[Client/Server Side]</b>
 ---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/charactersimple#function-callanimationblueprintevent">docs</a>
 ---
----Calls an Animation Blueprint Event or Function<br/>Returns all Function return values on <strong>Client Side</strong>
+---Calls an Animation Blueprint Event or Function.<br/><br/>Returns all Function return values on <strong>Client Side</strong>
 ---@param event_name string @Event or Function name
 ---@param ...? any @Sequence of arguments to pass to the event (Default: nil)
 ---@return any... @the function return values
@@ -2150,7 +2246,7 @@ function CharacterSimple:SetPawnSettings(use_controller_rotation_pitch, use_cont
 ---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/charactersimple#function-setphysicsasset">docs</a>
 ---
 ---Sets the Physics Asset for the Character
----@param physics_asset string @The new Physics Asset for the Character
+---@param physics_asset? string @The new Physics Asset for the Character, pass nil or an empty string to restore the Mesh's own Physics Asset (Default: nil)
 function CharacterSimple:SetPhysicsAsset(physics_asset) end
 
 ---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/authority-only.png" height="21"> <b>[Authority Side]</b>
@@ -2169,7 +2265,8 @@ function CharacterSimple:SetRotationSettings(rotation_rate, use_controller_desir
 ---@param max_walk_speed? integer @Max speed while walking (Default: 600)
 ---@param max_walk_speed_crouched? integer @Max speed while crouched (Default: 300)
 ---@param max_fly_speed? integer @Max speed while flying (Default: 600)
-function CharacterSimple:SetSpeedSettings(max_walk_speed, max_walk_speed_crouched, max_fly_speed) end
+---@param max_swim_speed? integer @Max speed while swimming (Default: 300)
+function CharacterSimple:SetSpeedSettings(max_walk_speed, max_walk_speed_crouched, max_fly_speed, max_swim_speed) end
 
 ---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/both.png" height="21"> <b>[Client/Server Side]</b>
 ---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/charactersimple#function-setspringarmsettings">docs</a>
@@ -2203,11 +2300,11 @@ function CharacterSimple:UnbindAnimationBlueprintEventDispatcher(dispatcher_name
 ---@overload fun(event_name: "Destroy", callback: fun(self: CharacterSimple)): fun(self: CharacterSimple) @Triggered when an Entity is destroyed
 ---@overload fun(event_name: "DimensionChange", callback: fun(self: CharacterSimple, old_dimension: integer, new_dimension: integer)): fun(self: CharacterSimple, old_dimension: integer, new_dimension: integer) @Triggered when an Actor changes its dimension
 ---@overload fun(event_name: "EndCrouch", callback: fun(self: CharacterSimple)): fun(self: CharacterSimple) @Called when Character stops crouching
----@overload fun(event_name: "EnterWater", callback: fun(self: CharacterSimple)): fun(self: CharacterSimple) @Triggered when an Actor enters a water body. Only Actors that simulate physics trigger this event, such as <code>Prop</code>, <code>Vehicle</code>, <code>Pickables</code> and <code>Character</code> only.
+---@overload fun(event_name: "EnterWater", callback: fun(self: CharacterSimple)): fun(self: CharacterSimple) @Triggered when an Actor enters a water body.<br/><br/>Only Actors that simulate physics trigger this event, such as <code>Prop</code>, <code>Vehicle</code>, <code>Pickables</code> and <code>Character</code> only.
 ---@overload fun(event_name: "HealthChange", callback: fun(self: CharacterSimple, old_health: integer, new_health: integer)): fun(self: CharacterSimple, old_health: integer, new_health: integer) @When Entity has its Health changed, or because took damage or manually set through scripting or respawning
 ---@overload fun(event_name: "Jump", callback: fun(self: CharacterSimple)): fun(self: CharacterSimple) @Event fired when the character has just started jumping
 ---@overload fun(event_name: "Land", callback: fun(self: CharacterSimple)): fun(self: CharacterSimple) @Called upon landing when falling
----@overload fun(event_name: "LeaveWater", callback: fun(self: CharacterSimple)): fun(self: CharacterSimple) @Triggered when an Actor leaves a water body. Only Actors that simulate physics trigger this event, such as <code>Prop</code>, <code>Vehicle</code>, <code>Pickables</code> and <code>Character</code> only.
+---@overload fun(event_name: "LeaveWater", callback: fun(self: CharacterSimple)): fun(self: CharacterSimple) @Triggered when an Actor leaves a water body.<br/><br/>Only Actors that simulate physics trigger this event, such as <code>Prop</code>, <code>Vehicle</code>, <code>Pickables</code> and <code>Character</code> only.
 ---@overload fun(event_name: "MoveComplete", callback: fun(self: CharacterSimple, succeeded: boolean)): fun(self: CharacterSimple, succeeded: boolean) @Called when AI reaches its destination, or when it fails
 ---@overload fun(event_name: "MovementModeChange", callback: fun(self: CharacterSimple, old_mode: integer, new_mode: integer)): fun(self: CharacterSimple, old_mode: integer, new_mode: integer) @Called when the Character movement mode changes
 ---@overload fun(event_name: "NetworkAuthorityChange", callback: fun(self: CharacterSimple, is_network_authority: boolean)): fun(self: CharacterSimple, is_network_authority: boolean) @Triggered when the local Player gets/loses network authority over this actor
@@ -2232,11 +2329,11 @@ function CharacterSimple.Subscribe(event_name, callback) end
 ---@overload fun(self: CharacterSimple, event_name: "Destroy", callback: fun(self: CharacterSimple)): fun(self: CharacterSimple) @Triggered when an Entity is destroyed
 ---@overload fun(self: CharacterSimple, event_name: "DimensionChange", callback: fun(self: CharacterSimple, old_dimension: integer, new_dimension: integer)): fun(self: CharacterSimple, old_dimension: integer, new_dimension: integer) @Triggered when an Actor changes its dimension
 ---@overload fun(self: CharacterSimple, event_name: "EndCrouch", callback: fun(self: CharacterSimple)): fun(self: CharacterSimple) @Called when Character stops crouching
----@overload fun(self: CharacterSimple, event_name: "EnterWater", callback: fun(self: CharacterSimple)): fun(self: CharacterSimple) @Triggered when an Actor enters a water body. Only Actors that simulate physics trigger this event, such as <code>Prop</code>, <code>Vehicle</code>, <code>Pickables</code> and <code>Character</code> only.
+---@overload fun(self: CharacterSimple, event_name: "EnterWater", callback: fun(self: CharacterSimple)): fun(self: CharacterSimple) @Triggered when an Actor enters a water body.<br/><br/>Only Actors that simulate physics trigger this event, such as <code>Prop</code>, <code>Vehicle</code>, <code>Pickables</code> and <code>Character</code> only.
 ---@overload fun(self: CharacterSimple, event_name: "HealthChange", callback: fun(self: CharacterSimple, old_health: integer, new_health: integer)): fun(self: CharacterSimple, old_health: integer, new_health: integer) @When Entity has its Health changed, or because took damage or manually set through scripting or respawning
 ---@overload fun(self: CharacterSimple, event_name: "Jump", callback: fun(self: CharacterSimple)): fun(self: CharacterSimple) @Event fired when the character has just started jumping
 ---@overload fun(self: CharacterSimple, event_name: "Land", callback: fun(self: CharacterSimple)): fun(self: CharacterSimple) @Called upon landing when falling
----@overload fun(self: CharacterSimple, event_name: "LeaveWater", callback: fun(self: CharacterSimple)): fun(self: CharacterSimple) @Triggered when an Actor leaves a water body. Only Actors that simulate physics trigger this event, such as <code>Prop</code>, <code>Vehicle</code>, <code>Pickables</code> and <code>Character</code> only.
+---@overload fun(self: CharacterSimple, event_name: "LeaveWater", callback: fun(self: CharacterSimple)): fun(self: CharacterSimple) @Triggered when an Actor leaves a water body.<br/><br/>Only Actors that simulate physics trigger this event, such as <code>Prop</code>, <code>Vehicle</code>, <code>Pickables</code> and <code>Character</code> only.
 ---@overload fun(self: CharacterSimple, event_name: "MoveComplete", callback: fun(self: CharacterSimple, succeeded: boolean)): fun(self: CharacterSimple, succeeded: boolean) @Called when AI reaches its destination, or when it fails
 ---@overload fun(self: CharacterSimple, event_name: "MovementModeChange", callback: fun(self: CharacterSimple, old_mode: integer, new_mode: integer)): fun(self: CharacterSimple, old_mode: integer, new_mode: integer) @Called when the Character movement mode changes
 ---@overload fun(self: CharacterSimple, event_name: "NetworkAuthorityChange", callback: fun(self: CharacterSimple, is_network_authority: boolean)): fun(self: CharacterSimple, is_network_authority: boolean) @Triggered when the local Player gets/loses network authority over this actor
@@ -2259,11 +2356,11 @@ function CharacterSimple:Subscribe(event_name, callback) end
 ---@overload fun(self: CharacterSimple, event_name: "Destroy", callback: fun(self: CharacterSimple)) @Triggered when an Entity is destroyed
 ---@overload fun(self: CharacterSimple, event_name: "DimensionChange", callback: fun(self: CharacterSimple, old_dimension: integer, new_dimension: integer)) @Triggered when an Actor changes its dimension
 ---@overload fun(self: CharacterSimple, event_name: "EndCrouch", callback: fun(self: CharacterSimple)) @Called when Character stops crouching
----@overload fun(self: CharacterSimple, event_name: "EnterWater", callback: fun(self: CharacterSimple)) @Triggered when an Actor enters a water body. Only Actors that simulate physics trigger this event, such as <code>Prop</code>, <code>Vehicle</code>, <code>Pickables</code> and <code>Character</code> only.
+---@overload fun(self: CharacterSimple, event_name: "EnterWater", callback: fun(self: CharacterSimple)) @Triggered when an Actor enters a water body.<br/><br/>Only Actors that simulate physics trigger this event, such as <code>Prop</code>, <code>Vehicle</code>, <code>Pickables</code> and <code>Character</code> only.
 ---@overload fun(self: CharacterSimple, event_name: "HealthChange", callback: fun(self: CharacterSimple, old_health: integer, new_health: integer)) @When Entity has its Health changed, or because took damage or manually set through scripting or respawning
 ---@overload fun(self: CharacterSimple, event_name: "Jump", callback: fun(self: CharacterSimple)) @Event fired when the character has just started jumping
 ---@overload fun(self: CharacterSimple, event_name: "Land", callback: fun(self: CharacterSimple)) @Called upon landing when falling
----@overload fun(self: CharacterSimple, event_name: "LeaveWater", callback: fun(self: CharacterSimple)) @Triggered when an Actor leaves a water body. Only Actors that simulate physics trigger this event, such as <code>Prop</code>, <code>Vehicle</code>, <code>Pickables</code> and <code>Character</code> only.
+---@overload fun(self: CharacterSimple, event_name: "LeaveWater", callback: fun(self: CharacterSimple)) @Triggered when an Actor leaves a water body.<br/><br/>Only Actors that simulate physics trigger this event, such as <code>Prop</code>, <code>Vehicle</code>, <code>Pickables</code> and <code>Character</code> only.
 ---@overload fun(self: CharacterSimple, event_name: "MoveComplete", callback: fun(self: CharacterSimple, succeeded: boolean)) @Called when AI reaches its destination, or when it fails
 ---@overload fun(self: CharacterSimple, event_name: "MovementModeChange", callback: fun(self: CharacterSimple, old_mode: integer, new_mode: integer)) @Called when the Character movement mode changes
 ---@overload fun(self: CharacterSimple, event_name: "NetworkAuthorityChange", callback: fun(self: CharacterSimple, is_network_authority: boolean)) @Triggered when the local Player gets/loses network authority over this actor
@@ -2287,11 +2384,11 @@ function CharacterSimple:Unsubscribe(event_name, callback) end
 ---@overload fun(event_name: "Destroy", callback: fun(self: CharacterSimple)) @Triggered when an Entity is destroyed
 ---@overload fun(event_name: "DimensionChange", callback: fun(self: CharacterSimple, old_dimension: integer, new_dimension: integer)) @Triggered when an Actor changes its dimension
 ---@overload fun(event_name: "EndCrouch", callback: fun(self: CharacterSimple)) @Called when Character stops crouching
----@overload fun(event_name: "EnterWater", callback: fun(self: CharacterSimple)) @Triggered when an Actor enters a water body. Only Actors that simulate physics trigger this event, such as <code>Prop</code>, <code>Vehicle</code>, <code>Pickables</code> and <code>Character</code> only.
+---@overload fun(event_name: "EnterWater", callback: fun(self: CharacterSimple)) @Triggered when an Actor enters a water body.<br/><br/>Only Actors that simulate physics trigger this event, such as <code>Prop</code>, <code>Vehicle</code>, <code>Pickables</code> and <code>Character</code> only.
 ---@overload fun(event_name: "HealthChange", callback: fun(self: CharacterSimple, old_health: integer, new_health: integer)) @When Entity has its Health changed, or because took damage or manually set through scripting or respawning
 ---@overload fun(event_name: "Jump", callback: fun(self: CharacterSimple)) @Event fired when the character has just started jumping
 ---@overload fun(event_name: "Land", callback: fun(self: CharacterSimple)) @Called upon landing when falling
----@overload fun(event_name: "LeaveWater", callback: fun(self: CharacterSimple)) @Triggered when an Actor leaves a water body. Only Actors that simulate physics trigger this event, such as <code>Prop</code>, <code>Vehicle</code>, <code>Pickables</code> and <code>Character</code> only.
+---@overload fun(event_name: "LeaveWater", callback: fun(self: CharacterSimple)) @Triggered when an Actor leaves a water body.<br/><br/>Only Actors that simulate physics trigger this event, such as <code>Prop</code>, <code>Vehicle</code>, <code>Pickables</code> and <code>Character</code> only.
 ---@overload fun(event_name: "MoveComplete", callback: fun(self: CharacterSimple, succeeded: boolean)) @Called when AI reaches its destination, or when it fails
 ---@overload fun(event_name: "MovementModeChange", callback: fun(self: CharacterSimple, old_mode: integer, new_mode: integer)) @Called when the Character movement mode changes
 ---@overload fun(event_name: "NetworkAuthorityChange", callback: fun(self: CharacterSimple, is_network_authority: boolean)) @Triggered when the local Player gets/loses network authority over this actor
@@ -2360,13 +2457,22 @@ function Chat.SetConfiguration(screen_location, size, anchors_min, anchors_max, 
 ---@param is_visible boolean @Whether the Chat is visible or not
 function Chat.SetVisibility(is_visible) end
 
+---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/server-only.png" height="21"> <b>[Server Side]</b>
+---<a href="https://docs.nanos-world.com/docs/scripting-reference/static-classes/chat#static-function-submit">docs</a>
+---
+---Submits a chat message as if the Player had typed it in the chat.<br/><br/>It also triggers the PlayerSubmit event
+---@param player Player @The player who is sending the message
+---@param message string @The message
+---@return boolean @false if a PlayerSubmit handler cancelled the message, true if it was broadcast
+function Chat.Submit(player, message) end
+
 
 
 ---Subscribe to an event
 ---@param event_name string @Name of the event to subscribe to
 ---@param callback function @Function to call when the event is triggered
 ---@return function @The callback function passed
----@overload fun(event_name: "ChatEntry", callback: fun(message: string, player?: Player)): fun(message: string, player?: Player) @Called when a new Chat Message is received, this is also triggered when new messages are sent programatically<br/><br/>This is useful for creating your own Chat interface while still use the built-in system
+---@overload fun(event_name: "ChatEntry", callback: fun(message: string, player?: Player)): fun(message: string, player?: Player) @Called when a new Chat Message is received, this is also triggered when new messages are sent programatically.<br/><br/>This is useful for creating your own Chat interface while still use the built-in system
 ---@overload fun(event_name: "Close", callback: fun()): fun() @When player closes the Chat
 ---@overload fun(event_name: "Open", callback: fun()): fun() @When player opens the Chat
 ---@overload fun(event_name: "PlayerSubmit", callback: fun(message: string, player: Player): boolean?): fun(message: string, player: Player): boolean? @Called when a player submits a message in the chat
@@ -2375,7 +2481,7 @@ function Chat.Subscribe(event_name, callback) end
 ---Unsubscribe from an event
 ---@param event_name string @Name of the event to unsubscribe from
 ---@param callback? function @Optional callback to unsubscribe (if no callback is passed then all callbacks in this Package will be unsubscribed from this event)
----@overload fun(event_name: "ChatEntry", callback: fun(message: string, player?: Player)) @Called when a new Chat Message is received, this is also triggered when new messages are sent programatically<br/><br/>This is useful for creating your own Chat interface while still use the built-in system
+---@overload fun(event_name: "ChatEntry", callback: fun(message: string, player?: Player)) @Called when a new Chat Message is received, this is also triggered when new messages are sent programatically.<br/><br/>This is useful for creating your own Chat interface while still use the built-in system
 ---@overload fun(event_name: "Close", callback: fun()) @When player closes the Chat
 ---@overload fun(event_name: "Open", callback: fun()) @When player opens the Chat
 ---@overload fun(event_name: "PlayerSubmit", callback: fun(message: string, player: Player): boolean?) @Called when a player submits a message in the chat
@@ -2489,7 +2595,7 @@ function Client.GetPackages(package_type_filter) end
 ---<a href="https://docs.nanos-world.com/docs/scripting-reference/static-classes/client#static-function-getsettings">docs</a>
 ---
 ---Gets the local player's game Settings
----@return { ToggleSprint: boolean, ToggleCrouch: boolean, ToggleAim: boolean, ToggleWalk: boolean, MouseSensitivity: number, AutoReAlignCamera: boolean, FOVCanChange: boolean, CameraBending: integer, EnableCustomLoadingScreen: boolean, VolumeMusic: integer, VolumeMenuMusic: integer, VolumeUI: integer, VolumeSFX: integer, VolumeAmbient: integer, VolumeOverall: integer, VolumeVoice: integer, PlaySoundInDesktop: boolean, Gamma: integer, MotionBlur: integer, FOV: integer, GameMaxFPS: integer, RayTracing: boolean, HardwareRayTracing: boolean, RHI: integer, BloodDecalQualityLevel: integer, AntiAliasingMethod: integer, ShadowMapMethod: integer, MegaLights: boolean, UpscalingMethod: integer, UpscalingQuality: integer, UpscalingSharpness: integer, FrameGenerationMethod: integer, LatencyReductionMethod: integer, DLSSFrameGenerationMode: integer, DLSSRayReconstruction: boolean, CEFSharedTexture: boolean, CEFUseHardwareAcceleration: boolean, CEFUseMessageLoopSchedule: boolean, CEFUseExternalBeginFrame: boolean, CEFMaxFrameRate: integer, CEFMaxResolution: integer, ScreenResolution: Vector2D, FullscreenMode: integer, VSync: boolean, ResolutionScale: number, OverallQuality: integer, ViewDistanceQuality: integer, ShadowQuality: integer, GlobalIlluminationQuality: integer, ReflectionQuality: integer, AntiAliasingQuality: integer, TextureQuality: integer, VisualEffectQuality: integer, PostProcessingQuality: integer, FoliageQuality: integer, ShadingQuality: integer } @the current Settings
+---@return { ToggleSprint: boolean, ToggleCrouch: boolean, ToggleAim: boolean, ToggleWalk: boolean, MouseSensitivity: number, AutoReAlignCamera: boolean, FOVCanChange: boolean, CameraBending: integer, EnableCustomLoadingScreen: boolean, VolumeMusic: integer, VolumeMenuMusic: integer, VolumeUI: integer, VolumeSFX: integer, VolumeAmbient: integer, VolumeOverall: integer, VolumeVoice: integer, VoicePushToTalk: boolean, PlaySoundInDesktop: boolean, PlayTypingSounds: boolean, Gamma: integer, MotionBlur: integer, FOV: integer, GameMaxFPS: integer, RayTracing: boolean, HardwareRayTracing: boolean, RHI: integer, BloodDecalQualityLevel: integer, AntiAliasingMethod: integer, ShadowMapMethod: integer, MegaLights: boolean, UpscalingMethod: integer, UpscalingQuality: integer, UpscalingSharpness: integer, FrameGenerationMethod: integer, LatencyReductionMethod: integer, DLSSFrameGenerationMode: integer, DLSSRayReconstruction: boolean, CEFSharedTexture: boolean, CEFUseHardwareAcceleration: boolean, CEFUseMessageLoopSchedule: boolean, CEFUseExternalBeginFrame: boolean, CEFMaxFrameRate: integer, CEFMaxResolution: integer, ScreenResolution: Vector2D, FullscreenMode: integer, VSync: boolean, ResolutionScale: number, OverallQuality: integer, ViewDistanceQuality: integer, ShadowQuality: integer, GlobalIlluminationQuality: integer, ReflectionQuality: integer, AntiAliasingQuality: integer, TextureQuality: integer, VisualEffectQuality: integer, PostProcessingQuality: integer, FoliageQuality: integer, ShadingQuality: integer } @the current Settings
 function Client.GetSettings() end
 
 ---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/client-only.png" height="21"> <b>[Client Side]</b>
@@ -2517,6 +2623,13 @@ function Client.GetValue(key, fallback) end
 function Client.IsPackageLoaded(package_name) end
 
 ---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/client-only.png" height="21"> <b>[Client Side]</b>
+---<a href="https://docs.nanos-world.com/docs/scripting-reference/static-classes/client#static-function-isvoipselfmuted">docs</a>
+---
+---Gets whether the local player has muted their own microphone.<br/><br/>Only the player can change it, with the VOIP key when the Open Mic setting is on, or from the escape menu.
+---@return boolean @Whether the microphone is muted by the player
+function Client.IsVOIPSelfMuted() end
+
+---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/client-only.png" height="21"> <b>[Client Side]</b>
 ---<a href="https://docs.nanos-world.com/docs/scripting-reference/static-classes/client#static-function-openescapemenu">docs</a>
 ---
 ---Opens the escape menu
@@ -2540,7 +2653,7 @@ function Client.SetEscapeMenuText(text) end
 ---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/client-only.png" height="21"> <b>[Client Side]</b>
 ---<a href="https://docs.nanos-world.com/docs/scripting-reference/static-classes/client#static-function-sethighlightcolor">docs</a>
 ---
----Changes the Highlight Color for highlighted actors at a specific Index. Multiply it by 5 (or more) for having a glowing effect.<br/><br/><code>HighlightMode.Always</code> will always be visible, even behind walls<br/><code>HighlightMode.OnlyHidden</code> will only be visible if behind a wall<br/><code>HighlightMode.OnlyVisible</code> will only be visible if not behind a wall<br/><br/>Note: You can only have 3 different indexes (0, 1 or 2).
+---Changes the Highlight Color for highlighted actors at a specific Index.<br/><br/>Multiply it by 5 (or more) for having a glowing effect.<br/><br/><code>HighlightMode.Always</code> will always be visible, even behind walls<br/><code>HighlightMode.OnlyHidden</code> will only be visible if behind a wall<br/><code>HighlightMode.OnlyVisible</code> will only be visible if not behind a wall<br/><br/>Note: You can only have 3 different indexes (0, 1 or 2).
 ---@param highlight_color Color @The color to use
 ---@param index integer @Highlight slot index (0 to 2)
 ---@param mode? HighlightMode @When the highlight is visible (Default: HighlightMode.Always)
@@ -2556,7 +2669,7 @@ function Client.SetNearClipPlane(near_clip_plane) end
 ---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/client-only.png" height="21"> <b>[Client Side]</b>
 ---<a href="https://docs.nanos-world.com/docs/scripting-reference/static-classes/client#static-function-setoutlinecolor">docs</a>
 ---
----Changes the Outline Color for outlined actors at a specific Index. Multiply it by 5 (or more) for having a glowing effect.<br/><br/>Note: You can only have 3 different indexes (0, 1 or 2), and the default Outline color index used by the game is  <code>0</code> (when interacting with stuff).
+---Changes the Outline Color for outlined actors at a specific Index.<br/><br/>Multiply it by 5 (or more) for having a glowing effect.<br/><br/>Note: You can only have 3 different indexes (0, 1 or 2), and the default Outline color index used by the game is  <code>0</code> (when interacting with stuff).
 ---@param outline_color Color @The color to use
 ---@param index? integer @Outline slot index (0 to 2) (Default: 0)
 ---@param thickness? number @Line thickness (Default: 2)
@@ -2573,7 +2686,7 @@ function Client.SetSettingGammaOverride(override, new_gamma) end
 ---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/client-only.png" height="21"> <b>[Client Side]</b>
 ---<a href="https://docs.nanos-world.com/docs/scripting-reference/static-classes/client#static-function-setvalue">docs</a>
 ---
----Sets a global value in the Client, which can be accessed from anywhere (client side)<br/><br/>Please refer to <a href="/docs/core-concepts/scripting/entity-values">Entity Values</a> for more information
+---Sets a global value in the Client, which can be accessed from anywhere (client side).<br/><br/>Please refer to <a href="/docs/core-concepts/scripting/entity-values">Entity Values</a> for more information
 ---@param key string @Key
 ---@param value any @Value
 function Client.SetValue(key, value) end
@@ -2595,9 +2708,12 @@ function Client.ShowNotification(text, notification_type, add_to_notification_li
 ---@param callback function @Function to call when the event is triggered
 ---@return function @The callback function passed
 ---@overload fun(event_name: "LanguageChange", callback: fun(language: string)): fun(language: string) @Called when the Client language changes
+---@overload fun(event_name: "PackageLoad", callback: fun(package_name: string)): fun(package_name: string) @Triggered when any package is loaded
+---@overload fun(event_name: "PackageUnload", callback: fun(package_name: string)): fun(package_name: string) @Triggered when any package is unloaded
 ---@overload fun(event_name: "SpawnLocalPlayer", callback: fun(local_player: Player)): fun(local_player: Player) @Called when the local player spawns (just after the game has loaded)
 ---@overload fun(event_name: "Tick", callback: fun(delta_time: number)): fun(delta_time: number) @Called Every Frame. Do not abuse
 ---@overload fun(event_name: "ValueChange", callback: fun(key: string, value: any)): fun(key: string, value: any) @Triggered when a Value is changed with <code>Client.SetValue()</code> or <code>Server.SetValue()</code> (for synced values)
+---@overload fun(event_name: "VOIPSelfMuteChange", callback: fun(is_muted: boolean)): fun(is_muted: boolean) @Called when the local player mutes or unmutes their own microphone, either with the VOIP key (on Open Mic) or from the escape menu
 ---@overload fun(event_name: "WindowFocusChange", callback: fun(is_focused: boolean)): fun(is_focused: boolean) @Called when the game is focused/unfocused
 function Client.Subscribe(event_name, callback) end
 
@@ -2605,9 +2721,12 @@ function Client.Subscribe(event_name, callback) end
 ---@param event_name string @Name of the event to unsubscribe from
 ---@param callback? function @Optional callback to unsubscribe (if no callback is passed then all callbacks in this Package will be unsubscribed from this event)
 ---@overload fun(event_name: "LanguageChange", callback: fun(language: string)) @Called when the Client language changes
+---@overload fun(event_name: "PackageLoad", callback: fun(package_name: string)) @Triggered when any package is loaded
+---@overload fun(event_name: "PackageUnload", callback: fun(package_name: string)) @Triggered when any package is unloaded
 ---@overload fun(event_name: "SpawnLocalPlayer", callback: fun(local_player: Player)) @Called when the local player spawns (just after the game has loaded)
 ---@overload fun(event_name: "Tick", callback: fun(delta_time: number)) @Called Every Frame. Do not abuse
 ---@overload fun(event_name: "ValueChange", callback: fun(key: string, value: any)) @Triggered when a Value is changed with <code>Client.SetValue()</code> or <code>Server.SetValue()</code> (for synced values)
+---@overload fun(event_name: "VOIPSelfMuteChange", callback: fun(is_muted: boolean)) @Called when the local player mutes or unmutes their own microphone, either with the VOIP key (on Open Mic) or from the escape menu
 ---@overload fun(event_name: "WindowFocusChange", callback: fun(is_focused: boolean)) @Called when the game is focused/unfocused
 function Client.Unsubscribe(event_name, callback) end
 
@@ -2737,7 +2856,7 @@ function Console.Debug(message, ...) end
 ---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/both.png" height="21"> <b>[Client/Server Side]</b>
 ---<a href="https://docs.nanos-world.com/docs/scripting-reference/static-classes/console#static-function-error">docs</a>
 ---
----Logs a red error in the console with stack information, with formatted arguments
+---Logs a red error in the console with stack information.<br/><br/>The message is formatted with the given arguments
 ---@param message string @Message to print
 ---@param ...? any @Other arguments to format with the message using string.format (Default: nil)
 function Console.Error(message, ...) end
@@ -2745,7 +2864,7 @@ function Console.Error(message, ...) end
 ---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/both.png" height="21"> <b>[Client/Server Side]</b>
 ---<a href="https://docs.nanos-world.com/docs/scripting-reference/static-classes/console#static-function-log">docs</a>
 ---
----Logs and formats a message in the console, with formatted arguments
+---Logs and formats a message in the console.<br/><br/>The message is formatted with the given arguments
 ---@param message string @Message to print
 ---@param ...? any @Other arguments to format with the message using string.format (Default: nil)
 function Console.Log(message, ...) end
@@ -2770,7 +2889,7 @@ function Console.RunCommand(command) end
 ---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/both.png" height="21"> <b>[Client/Server Side]</b>
 ---<a href="https://docs.nanos-world.com/docs/scripting-reference/static-classes/console#static-function-warn">docs</a>
 ---
----Logs an orange warning in the console with stack information, with formatted arguments
+---Logs an orange warning in the console with stack information.<br/><br/>The message is formatted with the given arguments
 ---@param message string @Message to print
 ---@param ...? any @Other arguments to format with the message using string.format (Default: nil)
 function Console.Warn(message, ...) end
@@ -2815,10 +2934,24 @@ Damageable = {}
 ---@return Damageable.Inherited @The new Class table, inheriting from Damageable
 function Damageable.Inherit(name, custom_values) end
 
+---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/both.png" height="21"> <b>[Client/Server Side]</b>
+---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/base-classes/entity#static-function-getall">docs</a>
+---
+---Returns a table containing all Entities of the class this is called on
+---@return Damageable[] @Copy of table containing all Entities
+function Damageable.GetAll() end
+
+---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/both.png" height="21"> <b>[Client/Server Side]</b>
+---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/base-classes/entity#static-function-getpairs">docs</a>
+---
+---Returns an iterator with all Entities of this class to be used with <code>pairs()</code>.<br/><br/>This is a more performant method than <code>GetAll()</code>, as it will return the iterator to access the Entities directly instead of creating and returning a copy of the Entities table.<br><br><b>Note:</b> Destroying Entities from inside a <code>GetPairs()</code> loop will cause the iterable to change size during the process. If you want to loop-and-destroy, please use <code>GetAll()</code>.
+---@return EntityIterator<Damageable> @Iterator with all Entities of this class
+function Damageable.GetPairs() end
+
 ---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/server-only.png" height="21"> <b>[Server Side]</b>
 ---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/base-classes/damageable#function-applydamage">docs</a>
 ---
----Do damage to this entity, will trigger all related events and apply modified damage based on bone. Also will apply impulse if it's a heavy explosion
+---Do damage to this entity.<br/><br/>It triggers all the related events and modifies the damage based on the bone. A heavy explosion also applies an impulse
 ---@param damage integer @Amount of damage
 ---@param bone_name? string @Name of the bone or socket (Default: "")
 ---@param damage_type? DamageType @Type of the damage, used for effects and in the damage events (Default: DamageType.Shot)
@@ -2876,7 +3009,7 @@ function Damageable:SetDamageMultiplier(bone_name, multiplier) end
 ---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/server-only.png" height="21"> <b>[Server Side]</b>
 ---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/base-classes/damageable#function-sethealth">docs</a>
 ---
----Sets the Health of this Entity. You can only call it on alive Entities (call Respawn first)
+---Sets the Health of this Entity.<br/><br/>You can only call it on alive Entities (call Respawn first)
 ---@param new_health integer @The new Health of this Entity
 function Damageable:SetHealth(new_health) end
 
@@ -2896,9 +3029,9 @@ function Damageable:SetMaxHealth(max_health) end
 ---@overload fun(event_name: "Death", callback: fun(self: Damageable, last_damage_taken: integer, last_bone_damaged: string, damage_type_reason: DamageType, hit_from_direction: Vector, instigator?: Player, causer?: Actor)): fun(self: Damageable, last_damage_taken: integer, last_bone_damaged: string, damage_type_reason: DamageType, hit_from_direction: Vector, instigator?: Player, causer?: Actor) @When Entity Dies
 ---@overload fun(event_name: "Destroy", callback: fun(self: Damageable)): fun(self: Damageable) @Triggered when an Entity is destroyed
 ---@overload fun(event_name: "DimensionChange", callback: fun(self: Damageable, old_dimension: integer, new_dimension: integer)): fun(self: Damageable, old_dimension: integer, new_dimension: integer) @Triggered when an Actor changes its dimension
----@overload fun(event_name: "EnterWater", callback: fun(self: Damageable)): fun(self: Damageable) @Triggered when an Actor enters a water body. Only Actors that simulate physics trigger this event, such as <code>Prop</code>, <code>Vehicle</code>, <code>Pickables</code> and <code>Character</code> only.
+---@overload fun(event_name: "EnterWater", callback: fun(self: Damageable)): fun(self: Damageable) @Triggered when an Actor enters a water body.<br/><br/>Only Actors that simulate physics trigger this event, such as <code>Prop</code>, <code>Vehicle</code>, <code>Pickables</code> and <code>Character</code> only.
 ---@overload fun(event_name: "HealthChange", callback: fun(self: Damageable, old_health: integer, new_health: integer)): fun(self: Damageable, old_health: integer, new_health: integer) @When Entity has its Health changed, or because took damage or manually set through scripting or respawning
----@overload fun(event_name: "LeaveWater", callback: fun(self: Damageable)): fun(self: Damageable) @Triggered when an Actor leaves a water body. Only Actors that simulate physics trigger this event, such as <code>Prop</code>, <code>Vehicle</code>, <code>Pickables</code> and <code>Character</code> only.
+---@overload fun(event_name: "LeaveWater", callback: fun(self: Damageable)): fun(self: Damageable) @Triggered when an Actor leaves a water body.<br/><br/>Only Actors that simulate physics trigger this event, such as <code>Prop</code>, <code>Vehicle</code>, <code>Pickables</code> and <code>Character</code> only.
 ---@overload fun(event_name: "NetworkAuthorityChange", callback: fun(self: Damageable, is_network_authority: boolean)): fun(self: Damageable, is_network_authority: boolean) @Triggered when the local Player gets/loses network authority over this actor
 ---@overload fun(event_name: "Respawn", callback: fun(self: Damageable)): fun(self: Damageable) @When Entity Respawns
 ---@overload fun(event_name: "Spawn", callback: fun(self: Damageable)): fun(self: Damageable) @Triggered when an Entity is spawned/created
@@ -2915,9 +3048,9 @@ function Damageable.Subscribe(event_name, callback) end
 ---@overload fun(self: Damageable, event_name: "Death", callback: fun(self: Damageable, last_damage_taken: integer, last_bone_damaged: string, damage_type_reason: DamageType, hit_from_direction: Vector, instigator?: Player, causer?: Actor)): fun(self: Damageable, last_damage_taken: integer, last_bone_damaged: string, damage_type_reason: DamageType, hit_from_direction: Vector, instigator?: Player, causer?: Actor) @When Entity Dies
 ---@overload fun(self: Damageable, event_name: "Destroy", callback: fun(self: Damageable)): fun(self: Damageable) @Triggered when an Entity is destroyed
 ---@overload fun(self: Damageable, event_name: "DimensionChange", callback: fun(self: Damageable, old_dimension: integer, new_dimension: integer)): fun(self: Damageable, old_dimension: integer, new_dimension: integer) @Triggered when an Actor changes its dimension
----@overload fun(self: Damageable, event_name: "EnterWater", callback: fun(self: Damageable)): fun(self: Damageable) @Triggered when an Actor enters a water body. Only Actors that simulate physics trigger this event, such as <code>Prop</code>, <code>Vehicle</code>, <code>Pickables</code> and <code>Character</code> only.
+---@overload fun(self: Damageable, event_name: "EnterWater", callback: fun(self: Damageable)): fun(self: Damageable) @Triggered when an Actor enters a water body.<br/><br/>Only Actors that simulate physics trigger this event, such as <code>Prop</code>, <code>Vehicle</code>, <code>Pickables</code> and <code>Character</code> only.
 ---@overload fun(self: Damageable, event_name: "HealthChange", callback: fun(self: Damageable, old_health: integer, new_health: integer)): fun(self: Damageable, old_health: integer, new_health: integer) @When Entity has its Health changed, or because took damage or manually set through scripting or respawning
----@overload fun(self: Damageable, event_name: "LeaveWater", callback: fun(self: Damageable)): fun(self: Damageable) @Triggered when an Actor leaves a water body. Only Actors that simulate physics trigger this event, such as <code>Prop</code>, <code>Vehicle</code>, <code>Pickables</code> and <code>Character</code> only.
+---@overload fun(self: Damageable, event_name: "LeaveWater", callback: fun(self: Damageable)): fun(self: Damageable) @Triggered when an Actor leaves a water body.<br/><br/>Only Actors that simulate physics trigger this event, such as <code>Prop</code>, <code>Vehicle</code>, <code>Pickables</code> and <code>Character</code> only.
 ---@overload fun(self: Damageable, event_name: "NetworkAuthorityChange", callback: fun(self: Damageable, is_network_authority: boolean)): fun(self: Damageable, is_network_authority: boolean) @Triggered when the local Player gets/loses network authority over this actor
 ---@overload fun(self: Damageable, event_name: "Respawn", callback: fun(self: Damageable)): fun(self: Damageable) @When Entity Respawns
 ---@overload fun(self: Damageable, event_name: "Spawn", callback: fun(self: Damageable)): fun(self: Damageable) @Triggered when an Entity is spawned/created
@@ -2932,9 +3065,9 @@ function Damageable:Subscribe(event_name, callback) end
 ---@overload fun(self: Damageable, event_name: "Death", callback: fun(self: Damageable, last_damage_taken: integer, last_bone_damaged: string, damage_type_reason: DamageType, hit_from_direction: Vector, instigator?: Player, causer?: Actor)) @When Entity Dies
 ---@overload fun(self: Damageable, event_name: "Destroy", callback: fun(self: Damageable)) @Triggered when an Entity is destroyed
 ---@overload fun(self: Damageable, event_name: "DimensionChange", callback: fun(self: Damageable, old_dimension: integer, new_dimension: integer)) @Triggered when an Actor changes its dimension
----@overload fun(self: Damageable, event_name: "EnterWater", callback: fun(self: Damageable)) @Triggered when an Actor enters a water body. Only Actors that simulate physics trigger this event, such as <code>Prop</code>, <code>Vehicle</code>, <code>Pickables</code> and <code>Character</code> only.
+---@overload fun(self: Damageable, event_name: "EnterWater", callback: fun(self: Damageable)) @Triggered when an Actor enters a water body.<br/><br/>Only Actors that simulate physics trigger this event, such as <code>Prop</code>, <code>Vehicle</code>, <code>Pickables</code> and <code>Character</code> only.
 ---@overload fun(self: Damageable, event_name: "HealthChange", callback: fun(self: Damageable, old_health: integer, new_health: integer)) @When Entity has its Health changed, or because took damage or manually set through scripting or respawning
----@overload fun(self: Damageable, event_name: "LeaveWater", callback: fun(self: Damageable)) @Triggered when an Actor leaves a water body. Only Actors that simulate physics trigger this event, such as <code>Prop</code>, <code>Vehicle</code>, <code>Pickables</code> and <code>Character</code> only.
+---@overload fun(self: Damageable, event_name: "LeaveWater", callback: fun(self: Damageable)) @Triggered when an Actor leaves a water body.<br/><br/>Only Actors that simulate physics trigger this event, such as <code>Prop</code>, <code>Vehicle</code>, <code>Pickables</code> and <code>Character</code> only.
 ---@overload fun(self: Damageable, event_name: "NetworkAuthorityChange", callback: fun(self: Damageable, is_network_authority: boolean)) @Triggered when the local Player gets/loses network authority over this actor
 ---@overload fun(self: Damageable, event_name: "Respawn", callback: fun(self: Damageable)) @When Entity Respawns
 ---@overload fun(self: Damageable, event_name: "Spawn", callback: fun(self: Damageable)) @Triggered when an Entity is spawned/created
@@ -2950,9 +3083,9 @@ function Damageable:Unsubscribe(event_name, callback) end
 ---@overload fun(event_name: "Death", callback: fun(self: Damageable, last_damage_taken: integer, last_bone_damaged: string, damage_type_reason: DamageType, hit_from_direction: Vector, instigator?: Player, causer?: Actor)) @When Entity Dies
 ---@overload fun(event_name: "Destroy", callback: fun(self: Damageable)) @Triggered when an Entity is destroyed
 ---@overload fun(event_name: "DimensionChange", callback: fun(self: Damageable, old_dimension: integer, new_dimension: integer)) @Triggered when an Actor changes its dimension
----@overload fun(event_name: "EnterWater", callback: fun(self: Damageable)) @Triggered when an Actor enters a water body. Only Actors that simulate physics trigger this event, such as <code>Prop</code>, <code>Vehicle</code>, <code>Pickables</code> and <code>Character</code> only.
+---@overload fun(event_name: "EnterWater", callback: fun(self: Damageable)) @Triggered when an Actor enters a water body.<br/><br/>Only Actors that simulate physics trigger this event, such as <code>Prop</code>, <code>Vehicle</code>, <code>Pickables</code> and <code>Character</code> only.
 ---@overload fun(event_name: "HealthChange", callback: fun(self: Damageable, old_health: integer, new_health: integer)) @When Entity has its Health changed, or because took damage or manually set through scripting or respawning
----@overload fun(event_name: "LeaveWater", callback: fun(self: Damageable)) @Triggered when an Actor leaves a water body. Only Actors that simulate physics trigger this event, such as <code>Prop</code>, <code>Vehicle</code>, <code>Pickables</code> and <code>Character</code> only.
+---@overload fun(event_name: "LeaveWater", callback: fun(self: Damageable)) @Triggered when an Actor leaves a water body.<br/><br/>Only Actors that simulate physics trigger this event, such as <code>Prop</code>, <code>Vehicle</code>, <code>Pickables</code> and <code>Character</code> only.
 ---@overload fun(event_name: "NetworkAuthorityChange", callback: fun(self: Damageable, is_network_authority: boolean)) @Triggered when the local Player gets/loses network authority over this actor
 ---@overload fun(event_name: "Respawn", callback: fun(self: Damageable)) @When Entity Respawns
 ---@overload fun(event_name: "Spawn", callback: fun(self: Damageable)) @Triggered when an Entity is spawned/created
@@ -3174,6 +3307,20 @@ function Decal:Constructor(location, rotation, material_asset, size, lifespan, f
 ---@return Decal.Inherited @The new Class table, inheriting from Decal
 function Decal.Inherit(name, custom_values) end
 
+---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/both.png" height="21"> <b>[Client/Server Side]</b>
+---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/base-classes/entity#static-function-getall">docs</a>
+---
+---Returns a table containing all Entities of the class this is called on
+---@return Decal[] @Copy of table containing all Entities
+function Decal.GetAll() end
+
+---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/both.png" height="21"> <b>[Client/Server Side]</b>
+---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/base-classes/entity#static-function-getpairs">docs</a>
+---
+---Returns an iterator with all Entities of this class to be used with <code>pairs()</code>.<br/><br/>This is a more performant method than <code>GetAll()</code>, as it will return the iterator to access the Entities directly instead of creating and returning a copy of the Entities table.<br><br><b>Note:</b> Destroying Entities from inside a <code>GetPairs()</code> loop will cause the iterable to change size during the process. If you want to loop-and-destroy, please use <code>GetAll()</code>.
+---@return EntityIterator<Decal> @Iterator with all Entities of this class
+function Decal.GetPairs() end
+
 ---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/authority-only.png" height="21"> <b>[Authority Side]</b>
 ---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/decal#function-setfadein">docs</a>
 ---
@@ -3252,6 +3399,13 @@ function Entity.Inherit(name, custom_values) end
 function Entity.GetAll() end
 
 ---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/both.png" height="21"> <b>[Client/Server Side]</b>
+---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/base-classes/entity#static-function-getpairs">docs</a>
+---
+---Returns an iterator with all Entities of this class to be used with <code>pairs()</code>.<br/><br/>This is a more performant method than <code>GetAll()</code>, as it will return the iterator to access the Entities directly instead of creating and returning a copy of the Entities table.<br><br><b>Note:</b> Destroying Entities from inside a <code>GetPairs()</code> loop will cause the iterable to change size during the process. If you want to loop-and-destroy, please use <code>GetAll()</code>.
+---@return EntityIterator<Entity> @Iterator with all Entities of this class
+function Entity.GetPairs() end
+
+---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/both.png" height="21"> <b>[Client/Server Side]</b>
 ---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/base-classes/entity#static-function-getbyindex">docs</a>
 ---
 ---Returns a specific Entity of this class at an index
@@ -3273,13 +3427,6 @@ function Entity.GetCount() end
 ---@param recursively? boolean @Returns all inherited children (Default: false)
 ---@return table[] @All children Classes
 function Entity.GetInheritedClasses(recursively) end
-
----<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/both.png" height="21"> <b>[Client/Server Side]</b>
----<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/base-classes/entity#static-function-getpairs">docs</a>
----
----Returns an iterator with all Entities of this class to be used with <code>pairs()</code>. This is a more performant method than <code>GetAll()</code>, as it will return the iterator to access the Entities directly instead of creating and returning a copy of the Entities table.<br><br><b>Note:</b> Destroying Entities from inside a <code>GetPairs()</code> loop will cause the iterable to change size during the process. If you want to loop-and-destroy, please use <code>GetAll()</code>.
----@return iterator @Iterator with all Entities of this class
-function Entity.GetPairs() end
 
 ---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/both.png" height="21"> <b>[Client/Server Side]</b>
 ---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/base-classes/entity#static-function-getparentclass">docs</a>
@@ -3362,7 +3509,7 @@ function Entity:Destroy() end
 ---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/both.png" height="21"> <b>[Client/Server Side]</b>
 ---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/base-classes/entity#function-finishspawn">docs</a>
 ---
----Finish the spawning process and send the entity to clients if it was spawned with <code>SpawnMode.AfterConstructor</code> or <code>SpawnMode.Manual</code>. Call this after configuring the entity for efficient spawning.<br><br>Note: an Entity of an <a href='/docs/core-concepts/scripting/inheriting-classes'>Inherited Class</a> constructed with <code>SpawnMode.AfterConstructor</code> finishes spawning automatically when its Constructor returns.
+---Finish the spawning process and send the entity to clients if it was spawned with a deferred <code>spawn_mode</code>.<br/><br/>Finish the spawning process and send the entity to clients if it was spawned with <code>SpawnMode.AfterConstructor</code> or <code>SpawnMode.Manual</code>. Call this after configuring the entity for efficient spawning.<br><br>Note: an Entity of an <a href='/docs/core-concepts/scripting/inheriting-classes'>Inherited Class</a> constructed with <code>SpawnMode.AfterConstructor</code> finishes spawning automatically when its Constructor returns.
 function Entity:FinishSpawn() end
 
 ---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/server-only.png" height="21"> <b>[Server Side]</b>
@@ -3389,7 +3536,7 @@ function Entity:GetID() end
 ---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/both.png" height="21"> <b>[Client/Server Side]</b>
 ---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/base-classes/entity#function-getvalue">docs</a>
 ---
----Gets a <a href='/docs/core-concepts/scripting/entity-values'>Value</a> stored on this Entity at the given key. Please refer to <a href="/docs/core-concepts/scripting/entity-values">Entity Values</a> for more information
+---Gets a <a href='/docs/core-concepts/scripting/entity-values'>Value</a> stored on this Entity at the given key.<br/><br/>Please refer to <a href="/docs/core-concepts/scripting/entity-values">Entity Values</a> for more information
 ---@param key string @The key
 ---@param fallback any @Fallback value if key doesn't exist
 ---@return any @Value at key or fallback if key doesn't exist
@@ -3413,14 +3560,14 @@ function Entity:IsA(class) end
 ---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/both.png" height="21"> <b>[Client/Server Side]</b>
 ---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/base-classes/entity#function-isbeingdestroyed">docs</a>
 ---
----Returns true if this Entity is being destroyed.<br>You can check this inside events like <code>Drop</code> to see if a Pickable is being dropped because it's going to be destroyed
+---Returns true if this Entity is being destroyed.<br/><br/>You can check this inside events like <code>Drop</code> to see if a Pickable is being dropped because it's going to be destroyed
 ---@return boolean @Whether this Entity is being destroyed
 function Entity:IsBeingDestroyed() end
 
 ---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/both.png" height="21"> <b>[Client/Server Side]</b>
 ---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/base-classes/entity#function-isspawned">docs</a>
 ---
----Gets if this Entity finished spawning.<br><br>An Entity spawned with a deferred <code>SpawnMode</code> is only spawned after <code>FinishSpawn()</code> is called on it or when the Inherited Class constructor returns, everything else is spawned right away.
+---Gets if this Entity finished spawning.<br/><br/>An Entity spawned with a deferred <code>SpawnMode</code> is only spawned after <code>FinishSpawn()</code> is called on it or when the Inherited Class constructor returns, everything else is spawned right away.
 ---@return boolean @If the Entity finished spawning
 function Entity:IsSpawned() end
 
@@ -3434,14 +3581,14 @@ function Entity:IsValid() end
 ---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/both.png" height="21"> <b>[Client/Server Side]</b>
 ---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/base-classes/entity#function-setspawnmode">docs</a>
 ---
----Overrides when this Entity finishes spawning, from the Constructor of an <a href='/docs/core-concepts/scripting/inheriting-classes'>Inherited Class</a>.<br><br>Only <code>SpawnMode.AfterConstructor</code> and <code>SpawnMode.Manual</code> are accepted, and only while the Entity has not finished spawning yet.
+---Overrides when this Entity finishes spawning, from the Constructor of an Inherited Class.<br/><br/>Overrides when this Entity finishes spawning, from the Constructor of an <a href='/docs/core-concepts/scripting/inheriting-classes'>Inherited Class</a>.<br><br>Only <code>SpawnMode.AfterConstructor</code> and <code>SpawnMode.Manual</code> are accepted, and only while the Entity has not finished spawning yet.
 ---@param spawn_mode SpawnMode @Only <code>SpawnMode.AfterConstructor</code> and <code>SpawnMode.Manual</code> are accepted
 function Entity:SetSpawnMode(spawn_mode) end
 
 ---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/both.png" height="21"> <b>[Client/Server Side]</b>
 ---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/base-classes/entity#function-setvalue">docs</a>
 ---
----Sets a value in this Entity, which can be accessed by any package (optionally sync on clients if called from server)<br><br>Please refer to <a href="/docs/core-concepts/scripting/entity-values">Entity Values</a> for more information
+---Sets a <a href='/docs/core-concepts/scripting/entity-values'>Value</a> in this Entity.<br/><br/>Sets a value in this Entity, which can be accessed by any package (optionally sync on clients if called from server)<br><br>Please refer to <a href="/docs/core-concepts/scripting/entity-values">Entity Values</a> for more information
 ---@param key string @The key
 ---@param value any @The value, can be any serializable type (not functions)
 ---@param sync_on_clients? boolean @Server side parameter, if enabled will sync this value with all clients (Default: false)
@@ -3508,7 +3655,7 @@ Events = {}
 ---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/server-only.png" height="21"> <b>[Server Side]</b>
 ---<a href="https://docs.nanos-world.com/docs/scripting-reference/static-classes/events#static-function-broadcastremote">docs</a>
 ---
----Broadcasts a remote custom Event from the Server to ALL currently connected Players (Server ➔ Clients)<br/>Must be caught using <code>Events.SubscribeRemote()</code> on the Clients
+---Broadcasts a remote custom Event from the Server to ALL currently connected Players (Server ➔ Clients).<br/><br/>Must be caught using <code>Events.SubscribeRemote()</code> on the Clients
 ---@param event_name string @The Event Name to trigger the event
 ---@param reliability? Reliability @The network reliability rule (Default: Reliability.Reliable)
 ---@param ...? any @Arguments to pass to the event (Default: nil)
@@ -3517,7 +3664,7 @@ function Events.BroadcastRemote(event_name, reliability, ...) end
 ---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/server-only.png" height="21"> <b>[Server Side]</b>
 ---<a href="https://docs.nanos-world.com/docs/scripting-reference/static-classes/events#static-function-broadcastremotedimension">docs</a>
 ---
----Broadcasts a remote custom Event from the Server to all Players currently residing in the specified Dimension (Server ➔ Clients)<br/>Must be caught using <code>Events.SubscribeRemote()</code> on the Clients
+---Broadcasts a remote custom Event from the Server to all Players currently residing in the specified Dimension (Server ➔ Clients).<br/><br/>Must be caught using <code>Events.SubscribeRemote()</code> on the Clients
 ---@param event_name string @The Event Name to trigger the event
 ---@param dimension integer @The Dimension to send this event
 ---@param reliability? Reliability @The network reliability rule (Default: Reliability.Reliable)
@@ -3527,7 +3674,7 @@ function Events.BroadcastRemoteDimension(event_name, dimension, reliability, ...
 ---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/server-only.png" height="21"> <b>[Server Side]</b>
 ---<a href="https://docs.nanos-world.com/docs/scripting-reference/static-classes/events#static-function-broadcastremoteinradius">docs</a>
 ---
----Broadcasts a remote custom Event from the Server to all Players within a specific location radius (Server ➔ Clients)<br/>Must be caught using <code>Events.SubscribeRemote()</code> on the Clients
+---Broadcasts a remote custom Event from the Server to all Players within a specific location radius (Server ➔ Clients).<br/><br/>Must be caught using <code>Events.SubscribeRemote()</code> on the Clients
 ---@param event_name string @The Event Name to trigger the event
 ---@param location Vector @The location used to calculate the event radius
 ---@param radius number @The radius to send this event
@@ -3538,7 +3685,7 @@ function Events.BroadcastRemoteInRadius(event_name, location, radius, reliabilit
 ---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/server-only.png" height="21"> <b>[Server Side]</b>
 ---<a href="https://docs.nanos-world.com/docs/scripting-reference/static-classes/events#static-function-broadcastremoteinradiusdimension">docs</a>
 ---
----Broadcasts a remote custom Event from the Server to all Players within a specific location radius AND residing in a specific Dimension (Server ➔ Clients)<br/>Must be caught using <code>Events.SubscribeRemote()</code> on the Clients
+---Broadcasts a remote custom Event from the Server to all Players within a specific location radius AND residing in a specific Dimension (Server ➔ Clients).<br/><br/>Must be caught using <code>Events.SubscribeRemote()</code> on the Clients
 ---@param event_name string @The Event Name to trigger the event
 ---@param location Vector @The location used to calculate the event radius
 ---@param radius number @The radius to send this event
@@ -3550,7 +3697,7 @@ function Events.BroadcastRemoteInRadiusDimension(event_name, location, radius, d
 ---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/both.png" height="21"> <b>[Client/Server Side]</b>
 ---<a href="https://docs.nanos-world.com/docs/scripting-reference/static-classes/events#static-function-call">docs</a>
 ---
----Triggers a local custom Event across all Packages on the same side (Client ➔ Client OR Server ➔ Server)<br/>Must be caught using <code>Events.Subscribe()</code>
+---Triggers a local custom Event across all Packages on the same side (Client ➔ Client OR Server ➔ Server).<br/><br/>Must be caught using <code>Events.Subscribe()</code>
 ---@param event_name string @The Event Name to trigger the event
 ---@param ...? any @Arguments to pass to the event (Default: nil)
 ---@return boolean @Returns false if any of the event listeners returned false, otherwise returns true
@@ -3559,7 +3706,7 @@ function Events.Call(event_name, ...) end
 ---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/client-only.png" height="21"> <b>[Client Side]</b>
 ---<a href="https://docs.nanos-world.com/docs/scripting-reference/static-classes/events#static-function-callremote">docs</a>
 ---
----Triggers a remote custom Event from the Client to the Server (Client ➔ Server)<br/>The receiving Server will implicitly receive the sender 'Player' as the very first argument before your custom args<br/>Must be caught using <code>Events.SubscribeRemote()</code>
+---Triggers a remote custom Event from the Client to the Server (Client ➔ Server).<br/><br/>The receiving Server will implicitly receive the sender 'Player' as the very first argument before your custom args<br/>Must be caught using <code>Events.SubscribeRemote()</code>
 ---@param event_name string @The Event Name to trigger the event
 ---@param reliability? Reliability @The network reliability rule (Default: Reliability.Reliable)
 ---@param ...? any @Arguments to pass to the event (Default: nil)
@@ -3568,7 +3715,7 @@ function Events.CallRemote(event_name, reliability, ...) end
 ---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/server-only.png" height="21"> <b>[Server Side]</b>
 ---<a href="https://docs.nanos-world.com/docs/scripting-reference/static-classes/events#static-function-callremote">docs</a>
 ---
----Triggers a remote custom Event from the Server to the Client (Server ➔ Client)<br/>Must be caught using <code>Events.SubscribeRemote()</code>
+---Triggers a remote custom Event from the Server to the Client (Server ➔ Client).<br/><br/>Must be caught using <code>Events.SubscribeRemote()</code>
 ---@param event_name string @The Event Name to trigger the event
 ---@param player Player @The remote player to send this event
 ---@param reliability? Reliability @The network reliability rule (Default: Reliability.Reliable)
@@ -3578,7 +3725,7 @@ function Events.CallRemote(event_name, player, reliability, ...) end
 ---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/server-only.png" height="21"> <b>[Server Side]</b>
 ---<a href="https://docs.nanos-world.com/docs/scripting-reference/static-classes/events#static-function-callremoteplayers">docs</a>
 ---
----Triggers a remote custom Event from the Server to an array of specific Players (Server ➔ Clients)<br/>More network-efficient than looping CallRemote<br/>Must be caught using <code>Events.SubscribeRemote()</code> on the Clients
+---Triggers a remote custom Event from the Server to an array of specific Players (Server ➔ Clients).<br/><br/>More network-efficient than looping CallRemote<br/>Must be caught using <code>Events.SubscribeRemote()</code> on the Clients
 ---@param event_name string @The Event Name to trigger the event
 ---@param players Player[] @The remote players to send this event
 ---@param reliability? Reliability @The network reliability rule (Default: Reliability.Reliable)
@@ -3597,7 +3744,7 @@ function Events.Subscribe(event_name, callback) end
 ---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/both.png" height="21"> <b>[Client/Server Side]</b>
 ---<a href="https://docs.nanos-world.com/docs/scripting-reference/static-classes/events#static-function-subscriberemote">docs</a>
 ---
----Listens for a network custom Event<br/>If on the Server, it catches <code>Events.CallRemote()</code> from Clients (receiving the sender 'Player' as the first argument)<br/>If on the Client, it catches Server broadcasts and remote calls
+---Listens for a network custom Event.<br/><br/>If on the Server, it catches <code>Events.CallRemote()</code> from Clients (receiving the sender 'Player' as the first argument)<br/>If on the Client, it catches Server broadcasts and remote calls
 ---@param event_name string @The Event Name to subscribe
 ---@param callback function @The callback function to execute
 ---@return function @the subscribed callback itself
@@ -3606,7 +3753,7 @@ function Events.SubscribeRemote(event_name, callback) end
 ---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/both.png" height="21"> <b>[Client/Server Side]</b>
 ---<a href="https://docs.nanos-world.com/docs/scripting-reference/static-classes/events#static-function-unsubscribe">docs</a>
 ---
----Removes a local event listener previously registered with <code>Events.Subscribe()</code>. If no specific callback function is passed, it removes ALL local listeners for that event name in the current Package
+---Removes a local event listener previously registered with <code>Events.Subscribe()</code>.<br/><br/>If no specific callback function is passed, it removes ALL local listeners for that event name in the current Package
 ---@param event_name string @The Event Name to unsubscribe
 ---@param callback? function @The callback function to unsubscribe (Default: nil)
 function Events.Unsubscribe(event_name, callback) end
@@ -3614,7 +3761,7 @@ function Events.Unsubscribe(event_name, callback) end
 ---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/both.png" height="21"> <b>[Client/Server Side]</b>
 ---<a href="https://docs.nanos-world.com/docs/scripting-reference/static-classes/events#static-function-unsubscriberemote">docs</a>
 ---
----Removes a network event listener previously registered with <code>Events.SubscribeRemote()</code>. If no specific callback function is passed, it removes ALL remote listeners for that event name in the current Package
+---Removes a network event listener previously registered with <code>Events.SubscribeRemote()</code>.<br/><br/>If no specific callback function is passed, it removes ALL remote listeners for that event name in the current Package
 ---@param event_name string @The Event Name to unsubscribe
 ---@param callback? function @The callback function to unsubscribe (Default: nil)
 function Events.UnsubscribeRemote(event_name, callback) end
@@ -3647,7 +3794,7 @@ function File.Exists(path) end
 ---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/both.png" height="21"> <b>[Client/Server Side]</b>
 ---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/file#static-function-getdirectories">docs</a>
 ---
----Gets a list of all directories given a path, optionally with filters. Note that the results may differ between Linux and Windows due to the way the file system works
+---Gets a list of all directories given a path.<br/><br/>Filters are optional. Note that the results may differ between Linux and Windows due to the way the file system works
 ---@param path_filter? string @Path filter (Default: "")
 ---@param max_depth? integer @The maximum depth to go further in the folders while searching. Pass -1 for maximum depth (Default: -1)
 ---@return string[] @List of directories
@@ -3656,7 +3803,7 @@ function File.GetDirectories(path_filter, max_depth) end
 ---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/both.png" height="21"> <b>[Client/Server Side]</b>
 ---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/file#static-function-getfiles">docs</a>
 ---
----Gets a list of all files in a directory, optionally with filters. Note that the results may differ between Linux and Windows due to the way the file system works
+---Gets a list of all files in a directory.<br/><br/>Filters are optional. Note that the results may differ between Linux and Windows due to the way the file system works
 ---@param path_filter? string|table @Path filter (Default: "")
 ---@param extension_filter? string @E.g.: <code>.lua</code> (Default: "")
 ---@param max_depth? integer @The maximum depth to go further in the folders while searching. Pass -1 for maximum depth (Default: -1)
@@ -3853,6 +4000,20 @@ function Gizmo:Constructor() end
 ---@return Gizmo.Inherited @The new Class table, inheriting from Gizmo
 function Gizmo.Inherit(name, custom_values) end
 
+---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/both.png" height="21"> <b>[Client/Server Side]</b>
+---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/base-classes/entity#static-function-getall">docs</a>
+---
+---Returns a table containing all Entities of the class this is called on
+---@return Gizmo[] @Copy of table containing all Entities
+function Gizmo.GetAll() end
+
+---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/both.png" height="21"> <b>[Client/Server Side]</b>
+---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/base-classes/entity#static-function-getpairs">docs</a>
+---
+---Returns an iterator with all Entities of this class to be used with <code>pairs()</code>.<br/><br/>This is a more performant method than <code>GetAll()</code>, as it will return the iterator to access the Entities directly instead of creating and returning a copy of the Entities table.<br><br><b>Note:</b> Destroying Entities from inside a <code>GetPairs()</code> loop will cause the iterable to change size during the process. If you want to loop-and-destroy, please use <code>GetAll()</code>.
+---@return EntityIterator<Gizmo> @Iterator with all Entities of this class
+function Gizmo.GetPairs() end
+
 ---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/client-only.png" height="21"> <b>[Client Side]</b>
 ---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/gizmo#function-activate">docs</a>
 ---
@@ -3919,8 +4080,8 @@ function Gizmo:SetTransformMode(transform_mode, combine_translate_rotate) end
 ---@overload fun(event_name: "ClassRegister", callback: fun(class: table)): fun(class: table) @Triggered when a new Class is registered with the <a href='/docs/core-concepts/scripting/inheriting-classes'>Inheriting System</a>
 ---@overload fun(event_name: "Destroy", callback: fun(self: Gizmo)): fun(self: Gizmo) @Triggered when an Entity is destroyed
 ---@overload fun(event_name: "DimensionChange", callback: fun(self: Gizmo, old_dimension: integer, new_dimension: integer)): fun(self: Gizmo, old_dimension: integer, new_dimension: integer) @Triggered when an Actor changes its dimension
----@overload fun(event_name: "EnterWater", callback: fun(self: Gizmo)): fun(self: Gizmo) @Triggered when an Actor enters a water body. Only Actors that simulate physics trigger this event, such as <code>Prop</code>, <code>Vehicle</code>, <code>Pickables</code> and <code>Character</code> only.
----@overload fun(event_name: "LeaveWater", callback: fun(self: Gizmo)): fun(self: Gizmo) @Triggered when an Actor leaves a water body. Only Actors that simulate physics trigger this event, such as <code>Prop</code>, <code>Vehicle</code>, <code>Pickables</code> and <code>Character</code> only.
+---@overload fun(event_name: "EnterWater", callback: fun(self: Gizmo)): fun(self: Gizmo) @Triggered when an Actor enters a water body.<br/><br/>Only Actors that simulate physics trigger this event, such as <code>Prop</code>, <code>Vehicle</code>, <code>Pickables</code> and <code>Character</code> only.
+---@overload fun(event_name: "LeaveWater", callback: fun(self: Gizmo)): fun(self: Gizmo) @Triggered when an Actor leaves a water body.<br/><br/>Only Actors that simulate physics trigger this event, such as <code>Prop</code>, <code>Vehicle</code>, <code>Pickables</code> and <code>Character</code> only.
 ---@overload fun(event_name: "NetworkAuthorityChange", callback: fun(self: Gizmo, is_network_authority: boolean)): fun(self: Gizmo, is_network_authority: boolean) @Triggered when the local Player gets/loses network authority over this actor
 ---@overload fun(event_name: "Spawn", callback: fun(self: Gizmo)): fun(self: Gizmo) @Triggered when an Entity is spawned/created
 ---@overload fun(event_name: "Transform", callback: fun(self: Gizmo, location: Vector, rotation: Rotator, scale: Vector)): fun(self: Gizmo, location: Vector, rotation: Rotator, scale: Vector) @Triggered when the Gizmo has its transform updated
@@ -3935,8 +4096,8 @@ function Gizmo.Subscribe(event_name, callback) end
 ---@overload fun(self: Gizmo, event_name: "ClassRegister", callback: fun(class: table)): fun(class: table) @Triggered when a new Class is registered with the <a href='/docs/core-concepts/scripting/inheriting-classes'>Inheriting System</a>
 ---@overload fun(self: Gizmo, event_name: "Destroy", callback: fun(self: Gizmo)): fun(self: Gizmo) @Triggered when an Entity is destroyed
 ---@overload fun(self: Gizmo, event_name: "DimensionChange", callback: fun(self: Gizmo, old_dimension: integer, new_dimension: integer)): fun(self: Gizmo, old_dimension: integer, new_dimension: integer) @Triggered when an Actor changes its dimension
----@overload fun(self: Gizmo, event_name: "EnterWater", callback: fun(self: Gizmo)): fun(self: Gizmo) @Triggered when an Actor enters a water body. Only Actors that simulate physics trigger this event, such as <code>Prop</code>, <code>Vehicle</code>, <code>Pickables</code> and <code>Character</code> only.
----@overload fun(self: Gizmo, event_name: "LeaveWater", callback: fun(self: Gizmo)): fun(self: Gizmo) @Triggered when an Actor leaves a water body. Only Actors that simulate physics trigger this event, such as <code>Prop</code>, <code>Vehicle</code>, <code>Pickables</code> and <code>Character</code> only.
+---@overload fun(self: Gizmo, event_name: "EnterWater", callback: fun(self: Gizmo)): fun(self: Gizmo) @Triggered when an Actor enters a water body.<br/><br/>Only Actors that simulate physics trigger this event, such as <code>Prop</code>, <code>Vehicle</code>, <code>Pickables</code> and <code>Character</code> only.
+---@overload fun(self: Gizmo, event_name: "LeaveWater", callback: fun(self: Gizmo)): fun(self: Gizmo) @Triggered when an Actor leaves a water body.<br/><br/>Only Actors that simulate physics trigger this event, such as <code>Prop</code>, <code>Vehicle</code>, <code>Pickables</code> and <code>Character</code> only.
 ---@overload fun(self: Gizmo, event_name: "NetworkAuthorityChange", callback: fun(self: Gizmo, is_network_authority: boolean)): fun(self: Gizmo, is_network_authority: boolean) @Triggered when the local Player gets/loses network authority over this actor
 ---@overload fun(self: Gizmo, event_name: "Spawn", callback: fun(self: Gizmo)): fun(self: Gizmo) @Triggered when an Entity is spawned/created
 ---@overload fun(self: Gizmo, event_name: "Transform", callback: fun(self: Gizmo, location: Vector, rotation: Rotator, scale: Vector)): fun(self: Gizmo, location: Vector, rotation: Rotator, scale: Vector) @Triggered when the Gizmo has its transform updated
@@ -3949,8 +4110,8 @@ function Gizmo:Subscribe(event_name, callback) end
 ---@overload fun(self: Gizmo, event_name: "ClassRegister", callback: fun(class: table)) @Triggered when a new Class is registered with the <a href='/docs/core-concepts/scripting/inheriting-classes'>Inheriting System</a>
 ---@overload fun(self: Gizmo, event_name: "Destroy", callback: fun(self: Gizmo)) @Triggered when an Entity is destroyed
 ---@overload fun(self: Gizmo, event_name: "DimensionChange", callback: fun(self: Gizmo, old_dimension: integer, new_dimension: integer)) @Triggered when an Actor changes its dimension
----@overload fun(self: Gizmo, event_name: "EnterWater", callback: fun(self: Gizmo)) @Triggered when an Actor enters a water body. Only Actors that simulate physics trigger this event, such as <code>Prop</code>, <code>Vehicle</code>, <code>Pickables</code> and <code>Character</code> only.
----@overload fun(self: Gizmo, event_name: "LeaveWater", callback: fun(self: Gizmo)) @Triggered when an Actor leaves a water body. Only Actors that simulate physics trigger this event, such as <code>Prop</code>, <code>Vehicle</code>, <code>Pickables</code> and <code>Character</code> only.
+---@overload fun(self: Gizmo, event_name: "EnterWater", callback: fun(self: Gizmo)) @Triggered when an Actor enters a water body.<br/><br/>Only Actors that simulate physics trigger this event, such as <code>Prop</code>, <code>Vehicle</code>, <code>Pickables</code> and <code>Character</code> only.
+---@overload fun(self: Gizmo, event_name: "LeaveWater", callback: fun(self: Gizmo)) @Triggered when an Actor leaves a water body.<br/><br/>Only Actors that simulate physics trigger this event, such as <code>Prop</code>, <code>Vehicle</code>, <code>Pickables</code> and <code>Character</code> only.
 ---@overload fun(self: Gizmo, event_name: "NetworkAuthorityChange", callback: fun(self: Gizmo, is_network_authority: boolean)) @Triggered when the local Player gets/loses network authority over this actor
 ---@overload fun(self: Gizmo, event_name: "Spawn", callback: fun(self: Gizmo)) @Triggered when an Entity is spawned/created
 ---@overload fun(self: Gizmo, event_name: "Transform", callback: fun(self: Gizmo, location: Vector, rotation: Rotator, scale: Vector)) @Triggered when the Gizmo has its transform updated
@@ -3964,8 +4125,8 @@ function Gizmo:Unsubscribe(event_name, callback) end
 ---@overload fun(event_name: "ClassRegister", callback: fun(class: table)) @Triggered when a new Class is registered with the <a href='/docs/core-concepts/scripting/inheriting-classes'>Inheriting System</a>
 ---@overload fun(event_name: "Destroy", callback: fun(self: Gizmo)) @Triggered when an Entity is destroyed
 ---@overload fun(event_name: "DimensionChange", callback: fun(self: Gizmo, old_dimension: integer, new_dimension: integer)) @Triggered when an Actor changes its dimension
----@overload fun(event_name: "EnterWater", callback: fun(self: Gizmo)) @Triggered when an Actor enters a water body. Only Actors that simulate physics trigger this event, such as <code>Prop</code>, <code>Vehicle</code>, <code>Pickables</code> and <code>Character</code> only.
----@overload fun(event_name: "LeaveWater", callback: fun(self: Gizmo)) @Triggered when an Actor leaves a water body. Only Actors that simulate physics trigger this event, such as <code>Prop</code>, <code>Vehicle</code>, <code>Pickables</code> and <code>Character</code> only.
+---@overload fun(event_name: "EnterWater", callback: fun(self: Gizmo)) @Triggered when an Actor enters a water body.<br/><br/>Only Actors that simulate physics trigger this event, such as <code>Prop</code>, <code>Vehicle</code>, <code>Pickables</code> and <code>Character</code> only.
+---@overload fun(event_name: "LeaveWater", callback: fun(self: Gizmo)) @Triggered when an Actor leaves a water body.<br/><br/>Only Actors that simulate physics trigger this event, such as <code>Prop</code>, <code>Vehicle</code>, <code>Pickables</code> and <code>Character</code> only.
 ---@overload fun(event_name: "NetworkAuthorityChange", callback: fun(self: Gizmo, is_network_authority: boolean)) @Triggered when the local Player gets/loses network authority over this actor
 ---@overload fun(event_name: "Spawn", callback: fun(self: Gizmo)) @Triggered when an Entity is spawned/created
 ---@overload fun(event_name: "Transform", callback: fun(self: Gizmo, location: Vector, rotation: Rotator, scale: Vector)) @Triggered when the Gizmo has its transform updated
@@ -4010,11 +4171,26 @@ function Grenade:Constructor(location, rotation, static_mesh_asset, explosion_pa
 ---@return Grenade.Inherited @The new Class table, inheriting from Grenade
 function Grenade.Inherit(name, custom_values) end
 
+---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/both.png" height="21"> <b>[Client/Server Side]</b>
+---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/base-classes/entity#static-function-getall">docs</a>
+---
+---Returns a table containing all Entities of the class this is called on
+---@return Grenade[] @Copy of table containing all Entities
+function Grenade.GetAll() end
+
+---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/both.png" height="21"> <b>[Client/Server Side]</b>
+---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/base-classes/entity#static-function-getpairs">docs</a>
+---
+---Returns an iterator with all Entities of this class to be used with <code>pairs()</code>.<br/><br/>This is a more performant method than <code>GetAll()</code>, as it will return the iterator to access the Entities directly instead of creating and returning a copy of the Entities table.<br><br><b>Note:</b> Destroying Entities from inside a <code>GetPairs()</code> loop will cause the iterable to change size during the process. If you want to loop-and-destroy, please use <code>GetAll()</code>.
+---@return EntityIterator<Grenade> @Iterator with all Entities of this class
+function Grenade.GetPairs() end
+
 ---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/server-only.png" height="21"> <b>[Server Side]</b>
 ---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/grenade#function-explode">docs</a>
 ---
----Forces this grenade to Explode
-function Grenade:Explode() end
+---Forces this grenade to Explode.<br/><br/></br></br>Without an instigator, the explosion belongs to the last Player who held this grenade, or to nobody if it was never picked up. An explosion with no owner damages everyone, ignoring Teams.
+---@param instigator? Player @The Player who owns the explosion, so Characters on the same Team are not damaged (Default: nil)
+function Grenade:Explode(instigator) end
 
 ---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/both.png" height="21"> <b>[Client/Server Side]</b>
 ---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/grenade#function-getbasedamage">docs</a>
@@ -4099,11 +4275,11 @@ function Grenade:SetTimeToExplode(time) end
 ---@overload fun(event_name: "Destroy", callback: fun(self: Grenade)): fun(self: Grenade) @Triggered when an Entity is destroyed
 ---@overload fun(event_name: "DimensionChange", callback: fun(self: Grenade, old_dimension: integer, new_dimension: integer)): fun(self: Grenade, old_dimension: integer, new_dimension: integer) @Triggered when an Actor changes its dimension
 ---@overload fun(event_name: "Drop", callback: fun(self: Grenade, character: Character, was_triggered_by_player: boolean)): fun(self: Grenade, character: Character, was_triggered_by_player: boolean) @When a Character drops this Pickable
----@overload fun(event_name: "EnterWater", callback: fun(self: Grenade)): fun(self: Grenade) @Triggered when an Actor enters a water body. Only Actors that simulate physics trigger this event, such as <code>Prop</code>, <code>Vehicle</code>, <code>Pickables</code> and <code>Character</code> only.
+---@overload fun(event_name: "EnterWater", callback: fun(self: Grenade)): fun(self: Grenade) @Triggered when an Actor enters a water body.<br/><br/>Only Actors that simulate physics trigger this event, such as <code>Prop</code>, <code>Vehicle</code>, <code>Pickables</code> and <code>Character</code> only.
 ---@overload fun(event_name: "Explode", callback: fun(self: Grenade)): fun(self: Grenade) @Triggered when the grenade has exploded
 ---@overload fun(event_name: "Hit", callback: fun(self: Grenade, impact_force: number, normal_impulse: Vector, impact_location: Vector, velocity: Vector, other_actor?: Actor)): fun(self: Grenade, impact_force: number, normal_impulse: Vector, impact_location: Vector, velocity: Vector, other_actor?: Actor) @When this Pickable hits something
 ---@overload fun(event_name: "Interact", callback: fun(self: Grenade, character: Character): boolean?): fun(self: Grenade, character: Character): boolean? @Triggered when a Character interacts with this Pickable (i.e. tries to pick it up)
----@overload fun(event_name: "LeaveWater", callback: fun(self: Grenade)): fun(self: Grenade) @Triggered when an Actor leaves a water body. Only Actors that simulate physics trigger this event, such as <code>Prop</code>, <code>Vehicle</code>, <code>Pickables</code> and <code>Character</code> only.
+---@overload fun(event_name: "LeaveWater", callback: fun(self: Grenade)): fun(self: Grenade) @Triggered when an Actor leaves a water body.<br/><br/>Only Actors that simulate physics trigger this event, such as <code>Prop</code>, <code>Vehicle</code>, <code>Pickables</code> and <code>Character</code> only.
 ---@overload fun(event_name: "NetworkAuthorityChange", callback: fun(self: Grenade, is_network_authority: boolean)): fun(self: Grenade, is_network_authority: boolean) @Triggered when the local Player gets/loses network authority over this actor
 ---@overload fun(event_name: "PickUp", callback: fun(self: Grenade, character: Character)): fun(self: Grenade, character: Character) @Triggered When a Character picks this up
 ---@overload fun(event_name: "PullUse", callback: fun(self: Grenade, character: Character)): fun(self: Grenade, character: Character) @Triggered when a Character presses the use button for this Pickable (i.e. clicks left mouse button with this equipped)
@@ -4122,11 +4298,11 @@ function Grenade.Subscribe(event_name, callback) end
 ---@overload fun(self: Grenade, event_name: "Destroy", callback: fun(self: Grenade)): fun(self: Grenade) @Triggered when an Entity is destroyed
 ---@overload fun(self: Grenade, event_name: "DimensionChange", callback: fun(self: Grenade, old_dimension: integer, new_dimension: integer)): fun(self: Grenade, old_dimension: integer, new_dimension: integer) @Triggered when an Actor changes its dimension
 ---@overload fun(self: Grenade, event_name: "Drop", callback: fun(self: Grenade, character: Character, was_triggered_by_player: boolean)): fun(self: Grenade, character: Character, was_triggered_by_player: boolean) @When a Character drops this Pickable
----@overload fun(self: Grenade, event_name: "EnterWater", callback: fun(self: Grenade)): fun(self: Grenade) @Triggered when an Actor enters a water body. Only Actors that simulate physics trigger this event, such as <code>Prop</code>, <code>Vehicle</code>, <code>Pickables</code> and <code>Character</code> only.
+---@overload fun(self: Grenade, event_name: "EnterWater", callback: fun(self: Grenade)): fun(self: Grenade) @Triggered when an Actor enters a water body.<br/><br/>Only Actors that simulate physics trigger this event, such as <code>Prop</code>, <code>Vehicle</code>, <code>Pickables</code> and <code>Character</code> only.
 ---@overload fun(self: Grenade, event_name: "Explode", callback: fun(self: Grenade)): fun(self: Grenade) @Triggered when the grenade has exploded
 ---@overload fun(self: Grenade, event_name: "Hit", callback: fun(self: Grenade, impact_force: number, normal_impulse: Vector, impact_location: Vector, velocity: Vector, other_actor?: Actor)): fun(self: Grenade, impact_force: number, normal_impulse: Vector, impact_location: Vector, velocity: Vector, other_actor?: Actor) @When this Pickable hits something
 ---@overload fun(self: Grenade, event_name: "Interact", callback: fun(self: Grenade, character: Character): boolean?): fun(self: Grenade, character: Character): boolean? @Triggered when a Character interacts with this Pickable (i.e. tries to pick it up)
----@overload fun(self: Grenade, event_name: "LeaveWater", callback: fun(self: Grenade)): fun(self: Grenade) @Triggered when an Actor leaves a water body. Only Actors that simulate physics trigger this event, such as <code>Prop</code>, <code>Vehicle</code>, <code>Pickables</code> and <code>Character</code> only.
+---@overload fun(self: Grenade, event_name: "LeaveWater", callback: fun(self: Grenade)): fun(self: Grenade) @Triggered when an Actor leaves a water body.<br/><br/>Only Actors that simulate physics trigger this event, such as <code>Prop</code>, <code>Vehicle</code>, <code>Pickables</code> and <code>Character</code> only.
 ---@overload fun(self: Grenade, event_name: "NetworkAuthorityChange", callback: fun(self: Grenade, is_network_authority: boolean)): fun(self: Grenade, is_network_authority: boolean) @Triggered when the local Player gets/loses network authority over this actor
 ---@overload fun(self: Grenade, event_name: "PickUp", callback: fun(self: Grenade, character: Character)): fun(self: Grenade, character: Character) @Triggered When a Character picks this up
 ---@overload fun(self: Grenade, event_name: "PullUse", callback: fun(self: Grenade, character: Character)): fun(self: Grenade, character: Character) @Triggered when a Character presses the use button for this Pickable (i.e. clicks left mouse button with this equipped)
@@ -4143,11 +4319,11 @@ function Grenade:Subscribe(event_name, callback) end
 ---@overload fun(self: Grenade, event_name: "Destroy", callback: fun(self: Grenade)) @Triggered when an Entity is destroyed
 ---@overload fun(self: Grenade, event_name: "DimensionChange", callback: fun(self: Grenade, old_dimension: integer, new_dimension: integer)) @Triggered when an Actor changes its dimension
 ---@overload fun(self: Grenade, event_name: "Drop", callback: fun(self: Grenade, character: Character, was_triggered_by_player: boolean)) @When a Character drops this Pickable
----@overload fun(self: Grenade, event_name: "EnterWater", callback: fun(self: Grenade)) @Triggered when an Actor enters a water body. Only Actors that simulate physics trigger this event, such as <code>Prop</code>, <code>Vehicle</code>, <code>Pickables</code> and <code>Character</code> only.
+---@overload fun(self: Grenade, event_name: "EnterWater", callback: fun(self: Grenade)) @Triggered when an Actor enters a water body.<br/><br/>Only Actors that simulate physics trigger this event, such as <code>Prop</code>, <code>Vehicle</code>, <code>Pickables</code> and <code>Character</code> only.
 ---@overload fun(self: Grenade, event_name: "Explode", callback: fun(self: Grenade)) @Triggered when the grenade has exploded
 ---@overload fun(self: Grenade, event_name: "Hit", callback: fun(self: Grenade, impact_force: number, normal_impulse: Vector, impact_location: Vector, velocity: Vector, other_actor?: Actor)) @When this Pickable hits something
 ---@overload fun(self: Grenade, event_name: "Interact", callback: fun(self: Grenade, character: Character): boolean?) @Triggered when a Character interacts with this Pickable (i.e. tries to pick it up)
----@overload fun(self: Grenade, event_name: "LeaveWater", callback: fun(self: Grenade)) @Triggered when an Actor leaves a water body. Only Actors that simulate physics trigger this event, such as <code>Prop</code>, <code>Vehicle</code>, <code>Pickables</code> and <code>Character</code> only.
+---@overload fun(self: Grenade, event_name: "LeaveWater", callback: fun(self: Grenade)) @Triggered when an Actor leaves a water body.<br/><br/>Only Actors that simulate physics trigger this event, such as <code>Prop</code>, <code>Vehicle</code>, <code>Pickables</code> and <code>Character</code> only.
 ---@overload fun(self: Grenade, event_name: "NetworkAuthorityChange", callback: fun(self: Grenade, is_network_authority: boolean)) @Triggered when the local Player gets/loses network authority over this actor
 ---@overload fun(self: Grenade, event_name: "PickUp", callback: fun(self: Grenade, character: Character)) @Triggered When a Character picks this up
 ---@overload fun(self: Grenade, event_name: "PullUse", callback: fun(self: Grenade, character: Character)) @Triggered when a Character presses the use button for this Pickable (i.e. clicks left mouse button with this equipped)
@@ -4165,11 +4341,11 @@ function Grenade:Unsubscribe(event_name, callback) end
 ---@overload fun(event_name: "Destroy", callback: fun(self: Grenade)) @Triggered when an Entity is destroyed
 ---@overload fun(event_name: "DimensionChange", callback: fun(self: Grenade, old_dimension: integer, new_dimension: integer)) @Triggered when an Actor changes its dimension
 ---@overload fun(event_name: "Drop", callback: fun(self: Grenade, character: Character, was_triggered_by_player: boolean)) @When a Character drops this Pickable
----@overload fun(event_name: "EnterWater", callback: fun(self: Grenade)) @Triggered when an Actor enters a water body. Only Actors that simulate physics trigger this event, such as <code>Prop</code>, <code>Vehicle</code>, <code>Pickables</code> and <code>Character</code> only.
+---@overload fun(event_name: "EnterWater", callback: fun(self: Grenade)) @Triggered when an Actor enters a water body.<br/><br/>Only Actors that simulate physics trigger this event, such as <code>Prop</code>, <code>Vehicle</code>, <code>Pickables</code> and <code>Character</code> only.
 ---@overload fun(event_name: "Explode", callback: fun(self: Grenade)) @Triggered when the grenade has exploded
 ---@overload fun(event_name: "Hit", callback: fun(self: Grenade, impact_force: number, normal_impulse: Vector, impact_location: Vector, velocity: Vector, other_actor?: Actor)) @When this Pickable hits something
 ---@overload fun(event_name: "Interact", callback: fun(self: Grenade, character: Character): boolean?) @Triggered when a Character interacts with this Pickable (i.e. tries to pick it up)
----@overload fun(event_name: "LeaveWater", callback: fun(self: Grenade)) @Triggered when an Actor leaves a water body. Only Actors that simulate physics trigger this event, such as <code>Prop</code>, <code>Vehicle</code>, <code>Pickables</code> and <code>Character</code> only.
+---@overload fun(event_name: "LeaveWater", callback: fun(self: Grenade)) @Triggered when an Actor leaves a water body.<br/><br/>Only Actors that simulate physics trigger this event, such as <code>Prop</code>, <code>Vehicle</code>, <code>Pickables</code> and <code>Character</code> only.
 ---@overload fun(event_name: "NetworkAuthorityChange", callback: fun(self: Grenade, is_network_authority: boolean)) @Triggered when the local Player gets/loses network authority over this actor
 ---@overload fun(event_name: "PickUp", callback: fun(self: Grenade, character: Character)) @Triggered When a Character picks this up
 ---@overload fun(event_name: "PullUse", callback: fun(self: Grenade, character: Character)) @Triggered when a Character presses the use button for this Pickable (i.e. clicks left mouse button with this equipped)
@@ -4308,7 +4484,7 @@ function Input.GetScriptingKeyBindings() end
 ---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/client-only.png" height="21"> <b>[Client Side]</b>
 ---<a href="https://docs.nanos-world.com/docs/scripting-reference/static-classes/input#static-function-inputkey">docs</a>
 ---
----Forces an Input Key event on Local Player<br/><br/>This won't trigger any Scripting event as it bypass internal validations
+---Forces an Input Key event on Local Player.<br/><br/>This won't trigger any Scripting event as it bypass internal validations
 ---@param key_name string @Key Name to input
 ---@param input_event InputEvent @Which Event to input
 ---@param amount_depressed? number @The amount pressed (Default: 1)
@@ -4317,7 +4493,7 @@ function Input.InputKey(key_name, input_event, amount_depressed) end
 ---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/client-only.png" height="21"> <b>[Client Side]</b>
 ---<a href="https://docs.nanos-world.com/docs/scripting-reference/static-classes/input#static-function-isbindingdown">docs</a>
 ---
----Returns if a Key Binding is being pressed.<br><br>A Binding can be mapped to more than one Key, any of them being pressed is enough for this to return <code>true</code>.
+---Returns if a Key Binding is being pressed.<br/><br/>A Binding can be mapped to more than one Key, any of them being pressed is enough for this to return <code>true</code>.
 ---@param binding_name string @The name of the Key Binding
 ---@return boolean @if the Key Binding is pressed
 function Input.IsBindingDown(binding_name) end
@@ -4383,7 +4559,7 @@ function Input.SetMouseEnabled(is_enabled) end
 ---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/client-only.png" height="21"> <b>[Client Side]</b>
 ---<a href="https://docs.nanos-world.com/docs/scripting-reference/static-classes/input#static-function-unbind">docs</a>
 ---
----Unbinds all Input functions related to the given binding_name and input_event
+---Unbinds an Input function.<br/><br/>Unbinds all Input functions related to the given binding_name and input_event
 ---@param binding_name string @The keybinding id
 ---@param input_event InputEvent @Which event to register (Released/Pressed)
 ---@param callback? function @The specific function to unbind (Default: nil)
@@ -4463,6 +4639,20 @@ function InstancedStaticMesh:Constructor(location, rotation, static_mesh_asset, 
 ---@param custom_values? table @An optional table with custom values to be set in the inherited class table (Default: {})
 ---@return InstancedStaticMesh.Inherited @The new Class table, inheriting from InstancedStaticMesh
 function InstancedStaticMesh.Inherit(name, custom_values) end
+
+---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/both.png" height="21"> <b>[Client/Server Side]</b>
+---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/base-classes/entity#static-function-getall">docs</a>
+---
+---Returns a table containing all Entities of the class this is called on
+---@return InstancedStaticMesh[] @Copy of table containing all Entities
+function InstancedStaticMesh.GetAll() end
+
+---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/both.png" height="21"> <b>[Client/Server Side]</b>
+---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/base-classes/entity#static-function-getpairs">docs</a>
+---
+---Returns an iterator with all Entities of this class to be used with <code>pairs()</code>.<br/><br/>This is a more performant method than <code>GetAll()</code>, as it will return the iterator to access the Entities directly instead of creating and returning a copy of the Entities table.<br><br><b>Note:</b> Destroying Entities from inside a <code>GetPairs()</code> loop will cause the iterable to change size during the process. If you want to loop-and-destroy, please use <code>GetAll()</code>.
+---@return EntityIterator<InstancedStaticMesh> @Iterator with all Entities of this class
+function InstancedStaticMesh.GetPairs() end
 
 ---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/authority-only.png" height="21"> <b>[Authority Side]</b>
 ---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/instancedstaticmesh#function-addinstance">docs</a>
@@ -4670,6 +4860,20 @@ function Light:Constructor(location, rotation, color, light_type, intensity, att
 function Light.Inherit(name, custom_values) end
 
 ---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/both.png" height="21"> <b>[Client/Server Side]</b>
+---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/base-classes/entity#static-function-getall">docs</a>
+---
+---Returns a table containing all Entities of the class this is called on
+---@return Light[] @Copy of table containing all Entities
+function Light.GetAll() end
+
+---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/both.png" height="21"> <b>[Client/Server Side]</b>
+---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/base-classes/entity#static-function-getpairs">docs</a>
+---
+---Returns an iterator with all Entities of this class to be used with <code>pairs()</code>.<br/><br/>This is a more performant method than <code>GetAll()</code>, as it will return the iterator to access the Entities directly instead of creating and returning a copy of the Entities table.<br><br><b>Note:</b> Destroying Entities from inside a <code>GetPairs()</code> loop will cause the iterable to change size during the process. If you want to loop-and-destroy, please use <code>GetAll()</code>.
+---@return EntityIterator<Light> @Iterator with all Entities of this class
+function Light.GetPairs() end
+
+---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/both.png" height="21"> <b>[Client/Server Side]</b>
 ---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/light#function-getattenuationradius">docs</a>
 ---
 ---Gets the distance this Light reaches
@@ -4794,10 +4998,24 @@ function Melee:Constructor(location, rotation, asset, collision_type, gravity_en
 ---@return Melee.Inherited @The new Class table, inheriting from Melee
 function Melee.Inherit(name, custom_values) end
 
+---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/both.png" height="21"> <b>[Client/Server Side]</b>
+---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/base-classes/entity#static-function-getall">docs</a>
+---
+---Returns a table containing all Entities of the class this is called on
+---@return Melee[] @Copy of table containing all Entities
+function Melee.GetAll() end
+
+---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/both.png" height="21"> <b>[Client/Server Side]</b>
+---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/base-classes/entity#static-function-getpairs">docs</a>
+---
+---Returns an iterator with all Entities of this class to be used with <code>pairs()</code>.<br/><br/>This is a more performant method than <code>GetAll()</code>, as it will return the iterator to access the Entities directly instead of creating and returning a copy of the Entities table.<br><br><b>Note:</b> Destroying Entities from inside a <code>GetPairs()</code> loop will cause the iterable to change size during the process. If you want to loop-and-destroy, please use <code>GetAll()</code>.
+---@return EntityIterator<Melee> @Iterator with all Entities of this class
+function Melee.GetPairs() end
+
 ---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/server-only.png" height="21"> <b>[Server Side]</b>
 ---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/melee#function-addanimationcharacteruse">docs</a>
 ---
----Sets an Animation when attacking<br/><br/>You can add more than one animation, which will be selected randomly when attacking
+---Sets an Animation when attacking.<br/><br/>You can add more than one animation, which will be selected randomly when attacking
 ---@param asset_path string @The Animation used when attacking
 ---@param play_rate? number @The Animation Play Rate (Default: 1.0)
 ---@param slot_type? AnimationSlotType @Whether to play it on upper body or full body (Default: AnimationSlotType.UpperBody)
@@ -4854,7 +5072,7 @@ function Melee:SetCooldown(cooldown) end
 ---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/server-only.png" height="21"> <b>[Server Side]</b>
 ---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/melee#function-setdamagesettings">docs</a>
 ---
----Sets the times when to start applying damage and when to end. During this time the collision of the melee will be enabled and the damage will be applied if it hits something
+---Sets the times when to start applying damage and when to end.<br/><br/>During this time the collision of the melee will be enabled and the damage will be applied if it hits something
 ---@param damage_start_time number @The initial time to start applying damage
 ---@param damage_duration_time number @The duration time to stop applying damage
 function Melee:SetDamageSettings(damage_start_time, damage_duration_time) end
@@ -4864,7 +5082,7 @@ function Melee:SetDamageSettings(damage_start_time, damage_duration_time) end
 ---
 ---Sets the Sound when hitting something
 ---@param surface_type SurfaceType @The surface to apply the sound. Use <code>SurfaceType.Default</code> to be the default to all non defined surfaces. Note: Surfaces <b>Water</b> and <b>Flesh</b> already have default sounds and must be explicitly overridden
----@param asset_path string @The Sound used when attacking
+---@param asset_path? string @The Sound used when attacking, pass nil or an empty string for no sound (Default: nil)
 ---@param volume? number @Volume multiplier (Default: 1.0)
 ---@param pitch? number @Pitch multiplier (Default: 1.0)
 function Melee:SetImpactSound(surface_type, asset_path, volume, pitch) end
@@ -4873,7 +5091,7 @@ function Melee:SetImpactSound(surface_type, asset_path, volume, pitch) end
 ---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/melee#function-setsounduse">docs</a>
 ---
 ---Sets the Sound when attacking
----@param asset_path string @The Sound used when attacking
+---@param asset_path? string @The Sound used when attacking, pass nil or an empty string for no sound (Default: nil)
 function Melee:SetSoundUse(asset_path) end
 
 
@@ -4886,10 +5104,10 @@ function Melee:SetSoundUse(asset_path) end
 ---@overload fun(event_name: "Destroy", callback: fun(self: Melee)): fun(self: Melee) @Triggered when an Entity is destroyed
 ---@overload fun(event_name: "DimensionChange", callback: fun(self: Melee, old_dimension: integer, new_dimension: integer)): fun(self: Melee, old_dimension: integer, new_dimension: integer) @Triggered when an Actor changes its dimension
 ---@overload fun(event_name: "Drop", callback: fun(self: Melee, character: Character, was_triggered_by_player: boolean)): fun(self: Melee, character: Character, was_triggered_by_player: boolean) @When a Character drops this Pickable
----@overload fun(event_name: "EnterWater", callback: fun(self: Melee)): fun(self: Melee) @Triggered when an Actor enters a water body. Only Actors that simulate physics trigger this event, such as <code>Prop</code>, <code>Vehicle</code>, <code>Pickables</code> and <code>Character</code> only.
+---@overload fun(event_name: "EnterWater", callback: fun(self: Melee)): fun(self: Melee) @Triggered when an Actor enters a water body.<br/><br/>Only Actors that simulate physics trigger this event, such as <code>Prop</code>, <code>Vehicle</code>, <code>Pickables</code> and <code>Character</code> only.
 ---@overload fun(event_name: "Hit", callback: fun(self: Melee, impact_force: number, normal_impulse: Vector, impact_location: Vector, velocity: Vector, other_actor?: Actor)): fun(self: Melee, impact_force: number, normal_impulse: Vector, impact_location: Vector, velocity: Vector, other_actor?: Actor) @When this Pickable hits something
 ---@overload fun(event_name: "Interact", callback: fun(self: Melee, character: Character): boolean?): fun(self: Melee, character: Character): boolean? @Triggered when a Character interacts with this Pickable (i.e. tries to pick it up)
----@overload fun(event_name: "LeaveWater", callback: fun(self: Melee)): fun(self: Melee) @Triggered when an Actor leaves a water body. Only Actors that simulate physics trigger this event, such as <code>Prop</code>, <code>Vehicle</code>, <code>Pickables</code> and <code>Character</code> only.
+---@overload fun(event_name: "LeaveWater", callback: fun(self: Melee)): fun(self: Melee) @Triggered when an Actor leaves a water body.<br/><br/>Only Actors that simulate physics trigger this event, such as <code>Prop</code>, <code>Vehicle</code>, <code>Pickables</code> and <code>Character</code> only.
 ---@overload fun(event_name: "NetworkAuthorityChange", callback: fun(self: Melee, is_network_authority: boolean)): fun(self: Melee, is_network_authority: boolean) @Triggered when the local Player gets/loses network authority over this actor
 ---@overload fun(event_name: "PickUp", callback: fun(self: Melee, character: Character)): fun(self: Melee, character: Character) @Triggered When a Character picks this up
 ---@overload fun(event_name: "PullUse", callback: fun(self: Melee, character: Character)): fun(self: Melee, character: Character) @Triggered when a Character presses the use button for this Pickable (i.e. clicks left mouse button with this equipped)
@@ -4908,10 +5126,10 @@ function Melee.Subscribe(event_name, callback) end
 ---@overload fun(self: Melee, event_name: "Destroy", callback: fun(self: Melee)): fun(self: Melee) @Triggered when an Entity is destroyed
 ---@overload fun(self: Melee, event_name: "DimensionChange", callback: fun(self: Melee, old_dimension: integer, new_dimension: integer)): fun(self: Melee, old_dimension: integer, new_dimension: integer) @Triggered when an Actor changes its dimension
 ---@overload fun(self: Melee, event_name: "Drop", callback: fun(self: Melee, character: Character, was_triggered_by_player: boolean)): fun(self: Melee, character: Character, was_triggered_by_player: boolean) @When a Character drops this Pickable
----@overload fun(self: Melee, event_name: "EnterWater", callback: fun(self: Melee)): fun(self: Melee) @Triggered when an Actor enters a water body. Only Actors that simulate physics trigger this event, such as <code>Prop</code>, <code>Vehicle</code>, <code>Pickables</code> and <code>Character</code> only.
+---@overload fun(self: Melee, event_name: "EnterWater", callback: fun(self: Melee)): fun(self: Melee) @Triggered when an Actor enters a water body.<br/><br/>Only Actors that simulate physics trigger this event, such as <code>Prop</code>, <code>Vehicle</code>, <code>Pickables</code> and <code>Character</code> only.
 ---@overload fun(self: Melee, event_name: "Hit", callback: fun(self: Melee, impact_force: number, normal_impulse: Vector, impact_location: Vector, velocity: Vector, other_actor?: Actor)): fun(self: Melee, impact_force: number, normal_impulse: Vector, impact_location: Vector, velocity: Vector, other_actor?: Actor) @When this Pickable hits something
 ---@overload fun(self: Melee, event_name: "Interact", callback: fun(self: Melee, character: Character): boolean?): fun(self: Melee, character: Character): boolean? @Triggered when a Character interacts with this Pickable (i.e. tries to pick it up)
----@overload fun(self: Melee, event_name: "LeaveWater", callback: fun(self: Melee)): fun(self: Melee) @Triggered when an Actor leaves a water body. Only Actors that simulate physics trigger this event, such as <code>Prop</code>, <code>Vehicle</code>, <code>Pickables</code> and <code>Character</code> only.
+---@overload fun(self: Melee, event_name: "LeaveWater", callback: fun(self: Melee)): fun(self: Melee) @Triggered when an Actor leaves a water body.<br/><br/>Only Actors that simulate physics trigger this event, such as <code>Prop</code>, <code>Vehicle</code>, <code>Pickables</code> and <code>Character</code> only.
 ---@overload fun(self: Melee, event_name: "NetworkAuthorityChange", callback: fun(self: Melee, is_network_authority: boolean)): fun(self: Melee, is_network_authority: boolean) @Triggered when the local Player gets/loses network authority over this actor
 ---@overload fun(self: Melee, event_name: "PickUp", callback: fun(self: Melee, character: Character)): fun(self: Melee, character: Character) @Triggered When a Character picks this up
 ---@overload fun(self: Melee, event_name: "PullUse", callback: fun(self: Melee, character: Character)): fun(self: Melee, character: Character) @Triggered when a Character presses the use button for this Pickable (i.e. clicks left mouse button with this equipped)
@@ -4928,10 +5146,10 @@ function Melee:Subscribe(event_name, callback) end
 ---@overload fun(self: Melee, event_name: "Destroy", callback: fun(self: Melee)) @Triggered when an Entity is destroyed
 ---@overload fun(self: Melee, event_name: "DimensionChange", callback: fun(self: Melee, old_dimension: integer, new_dimension: integer)) @Triggered when an Actor changes its dimension
 ---@overload fun(self: Melee, event_name: "Drop", callback: fun(self: Melee, character: Character, was_triggered_by_player: boolean)) @When a Character drops this Pickable
----@overload fun(self: Melee, event_name: "EnterWater", callback: fun(self: Melee)) @Triggered when an Actor enters a water body. Only Actors that simulate physics trigger this event, such as <code>Prop</code>, <code>Vehicle</code>, <code>Pickables</code> and <code>Character</code> only.
+---@overload fun(self: Melee, event_name: "EnterWater", callback: fun(self: Melee)) @Triggered when an Actor enters a water body.<br/><br/>Only Actors that simulate physics trigger this event, such as <code>Prop</code>, <code>Vehicle</code>, <code>Pickables</code> and <code>Character</code> only.
 ---@overload fun(self: Melee, event_name: "Hit", callback: fun(self: Melee, impact_force: number, normal_impulse: Vector, impact_location: Vector, velocity: Vector, other_actor?: Actor)) @When this Pickable hits something
 ---@overload fun(self: Melee, event_name: "Interact", callback: fun(self: Melee, character: Character): boolean?) @Triggered when a Character interacts with this Pickable (i.e. tries to pick it up)
----@overload fun(self: Melee, event_name: "LeaveWater", callback: fun(self: Melee)) @Triggered when an Actor leaves a water body. Only Actors that simulate physics trigger this event, such as <code>Prop</code>, <code>Vehicle</code>, <code>Pickables</code> and <code>Character</code> only.
+---@overload fun(self: Melee, event_name: "LeaveWater", callback: fun(self: Melee)) @Triggered when an Actor leaves a water body.<br/><br/>Only Actors that simulate physics trigger this event, such as <code>Prop</code>, <code>Vehicle</code>, <code>Pickables</code> and <code>Character</code> only.
 ---@overload fun(self: Melee, event_name: "NetworkAuthorityChange", callback: fun(self: Melee, is_network_authority: boolean)) @Triggered when the local Player gets/loses network authority over this actor
 ---@overload fun(self: Melee, event_name: "PickUp", callback: fun(self: Melee, character: Character)) @Triggered When a Character picks this up
 ---@overload fun(self: Melee, event_name: "PullUse", callback: fun(self: Melee, character: Character)) @Triggered when a Character presses the use button for this Pickable (i.e. clicks left mouse button with this equipped)
@@ -4949,10 +5167,10 @@ function Melee:Unsubscribe(event_name, callback) end
 ---@overload fun(event_name: "Destroy", callback: fun(self: Melee)) @Triggered when an Entity is destroyed
 ---@overload fun(event_name: "DimensionChange", callback: fun(self: Melee, old_dimension: integer, new_dimension: integer)) @Triggered when an Actor changes its dimension
 ---@overload fun(event_name: "Drop", callback: fun(self: Melee, character: Character, was_triggered_by_player: boolean)) @When a Character drops this Pickable
----@overload fun(event_name: "EnterWater", callback: fun(self: Melee)) @Triggered when an Actor enters a water body. Only Actors that simulate physics trigger this event, such as <code>Prop</code>, <code>Vehicle</code>, <code>Pickables</code> and <code>Character</code> only.
+---@overload fun(event_name: "EnterWater", callback: fun(self: Melee)) @Triggered when an Actor enters a water body.<br/><br/>Only Actors that simulate physics trigger this event, such as <code>Prop</code>, <code>Vehicle</code>, <code>Pickables</code> and <code>Character</code> only.
 ---@overload fun(event_name: "Hit", callback: fun(self: Melee, impact_force: number, normal_impulse: Vector, impact_location: Vector, velocity: Vector, other_actor?: Actor)) @When this Pickable hits something
 ---@overload fun(event_name: "Interact", callback: fun(self: Melee, character: Character): boolean?) @Triggered when a Character interacts with this Pickable (i.e. tries to pick it up)
----@overload fun(event_name: "LeaveWater", callback: fun(self: Melee)) @Triggered when an Actor leaves a water body. Only Actors that simulate physics trigger this event, such as <code>Prop</code>, <code>Vehicle</code>, <code>Pickables</code> and <code>Character</code> only.
+---@overload fun(event_name: "LeaveWater", callback: fun(self: Melee)) @Triggered when an Actor leaves a water body.<br/><br/>Only Actors that simulate physics trigger this event, such as <code>Prop</code>, <code>Vehicle</code>, <code>Pickables</code> and <code>Character</code> only.
 ---@overload fun(event_name: "NetworkAuthorityChange", callback: fun(self: Melee, is_network_authority: boolean)) @Triggered when the local Player gets/loses network authority over this actor
 ---@overload fun(event_name: "PickUp", callback: fun(self: Melee, character: Character)) @Triggered When a Character picks this up
 ---@overload fun(event_name: "PullUse", callback: fun(self: Melee, character: Character)) @Triggered when a Character presses the use button for this Pickable (i.e. clicks left mouse button with this equipped)
@@ -5001,7 +5219,7 @@ function NanosMath.FInterpTo(current, target, delta_time, interp_speed) end
 ---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/both.png" height="21"> <b>[Client/Server Side]</b>
 ---<a href="https://docs.nanos-world.com/docs/scripting-reference/utility-libraries/nanosmath#static-function-localtoworld">docs</a>
 ---
----Takes a local position and rotation relative to an actor, applies the actor's location, rotation, and scale to compute world-space location and rotation.
+---Converts a local location and rotation to world coordinates based on an actor's transform.<br/><br/>Takes a local position and rotation relative to an actor, applies the actor's location, rotation, and scale to compute world-space location and rotation.
 ---@param local_location Vector @The local location to convert
 ---@param local_rotation Rotator @The local rotation to convert
 ---@param actor Actor @The actor whose transform defines the local space
@@ -5123,7 +5341,7 @@ NanosUtils = {}
 ---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/both.png" height="21"> <b>[Client/Server Side]</b>
 ---<a href="https://docs.nanos-world.com/docs/scripting-reference/utility-libraries/nanosutils#static-function-benchmark">docs</a>
 ---
----Benchmarks a function performance, outputs in the console the elapsed time
+---Benchmarks a function performance.<br/><br/>It outputs the elapsed time in the console
 ---@param name string @Benchmark name to output
 ---@param amount number @Amount of times to loop
 ---@param func function @The function to call
@@ -5149,7 +5367,7 @@ Navigation = {}
 ---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/client-only.png" height="21"> <b>[Client Side]</b>
 ---<a href="https://docs.nanos-world.com/docs/scripting-reference/static-classes/navigation#static-function-findpathtolocation">docs</a>
 ---
----Finds a Path given Start and End location (only if map has a NavMesh)
+---Finds a Path given Start and End location.<br/><br/>It only works if the map has a NavMesh
 ---@param start_location Vector @World start location
 ---@param end_location Vector @World end location
 ---@return { IsValid: boolean, IsPartial: boolean, Length: number, Cost: number, PathPoints: Vector[] } @Table with the path points and whether a path was found
@@ -5158,7 +5376,7 @@ function Navigation.FindPathToLocation(start_location, end_location) end
 ---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/client-only.png" height="21"> <b>[Client Side]</b>
 ---<a href="https://docs.nanos-world.com/docs/scripting-reference/static-classes/navigation#static-function-getrandompointinnavigableradius">docs</a>
 ---
----Finds random, point in navigable space restricted to Radius around Origin. Resulting location is not tested for reachability from the Origin (only if map has a NavMesh)
+---Finds random, point in navigable space restricted to Radius around Origin. Resulting location is not tested for reachability from the Origin.<br/><br/>It only works if the map has a NavMesh
 ---@param origin Vector @Center of the search
 ---@param radius number @Search radius
 ---@return Vector @The random point
@@ -5167,7 +5385,7 @@ function Navigation.GetRandomPointInNavigableRadius(origin, radius) end
 ---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/client-only.png" height="21"> <b>[Client Side]</b>
 ---<a href="https://docs.nanos-world.com/docs/scripting-reference/static-classes/navigation#static-function-getrandomreachablepointinradius">docs</a>
 ---
----Finds random, reachable point in navigable space restricted to radius around origin (only if map has a NavMesh)
+---Finds random, reachable point in navigable space restricted to radius around origin.<br/><br/>It only works if the map has a NavMesh
 ---@param origin Vector @Center of the search
 ---@param radius number @Search radius
 ---@return Vector @The random point
@@ -5191,7 +5409,7 @@ function Package.Export(variable_name, value) end
 ---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/both.png" height="21"> <b>[Client/Server Side]</b>
 ---<a href="https://docs.nanos-world.com/docs/scripting-reference/static-classes/package#static-function-flushpersistentdata">docs</a>
 ---
----Flushes the Persistent Data pending changes to disk immediately. Note: this operation is already performed automatically under the hood, it is not necessary to keep always flushing and should only be used when really needed, as disk writing is a slow operation
+---Flushes the Persistent Data pending changes to disk immediately.<br/><br/>Note: this operation is already performed automatically under the hood, it is not necessary to keep always flushing and should only be used when really needed, as disk writing is a slow operation
 function Package.FlushPersistentData() end
 
 ---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/both.png" height="21"> <b>[Client/Server Side]</b>
@@ -5204,7 +5422,7 @@ function Package.GetCompatibilityVersion() end
 ---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/both.png" height="21"> <b>[Client/Server Side]</b>
 ---<a href="https://docs.nanos-world.com/docs/scripting-reference/static-classes/package#static-function-getdirectories">docs</a>
 ---
----Gets a list of all files in this package, optionally with filters
+---Gets a list of all directories in this package.<br/><br/>Gets a list of all files in this package, optionally with filters
 ---@param path_filter? string @Path filter (Default: "")
 ---@return string[] @List of directories
 function Package.GetDirectories(path_filter) end
@@ -5212,7 +5430,7 @@ function Package.GetDirectories(path_filter) end
 ---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/both.png" height="21"> <b>[Client/Server Side]</b>
 ---<a href="https://docs.nanos-world.com/docs/scripting-reference/static-classes/package#static-function-getfiles">docs</a>
 ---
----Gets a list of all files in this package, optionally with filters
+---Gets a list of all files in this package.<br/><br/>Filters are optional
 ---@param path_filter? string|table @Path filter (Default: "")
 ---@param extension_filter? string @Example: <code>.lua</code> (Default: "")
 ---@return string[] @List of files
@@ -5228,7 +5446,7 @@ function Package.GetName() end
 ---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/both.png" height="21"> <b>[Client/Server Side]</b>
 ---<a href="https://docs.nanos-world.com/docs/scripting-reference/static-classes/package#static-function-getpersistentdata">docs</a>
 ---
----Gets a Persistent Value from the disk<br/>Pass no parameter to return the whole table, or a key to get a specific value
+---Gets the Persistent Value from the disk.<br/><br/>Gets a Persistent Value from the disk<br/>Pass no parameter to return the whole table, or a key to get a specific value
 ---@param key? string @The key to get the data (Default: "")
 ---@return table @Persistent values from disk
 function Package.GetPersistentData(key) end
@@ -5257,7 +5475,7 @@ function Package.IsUnloading() end
 ---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/both.png" height="21"> <b>[Client/Server Side]</b>
 ---<a href="https://docs.nanos-world.com/docs/scripting-reference/static-classes/package#static-function-loadfile">docs</a>
 ---
----Compiles a .lua file and returns a function to run it. To be used for loading files in a sandboxed environment.<br/><br/>Supports the same searchers as <a href="#static-function-require">Package.Require</a>.
+---Compiles a .lua file and returns a function to run it.<br/><br/>To be used for loading files in a sandboxed environment.<br/><br/>Supports the same searchers as <a href="#static-function-require">Package.Require</a>.
 ---@param file_path string @Path to the script file to compile
 ---@return function @the compiled function to run the script, allowing you to pass an environment table for the script
 function Package.LoadFile(file_path) end
@@ -5265,14 +5483,14 @@ function Package.LoadFile(file_path) end
 ---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/server-only.png" height="21"> <b>[Server Side]</b>
 ---<a href="https://docs.nanos-world.com/docs/scripting-reference/static-classes/package#static-function-reloadclientfile">docs</a>
 ---
----Reloads a file from <code>Client/</code> or <code>Shared/</code> folder and sends the updated version to clients, triggering the <a href="#event-filereload">FileReload</a> event on them<br/><br/>The reloaded file will be re-cached and downloaded normally by new connecting clients<br/><br/>Note that this method does use the main network lane, so it is not recommended to be used frequently or with large files in production environments as it may cause network congestion and lag spikes. It is mostly intended for development purposes to allow faster iteration on client files without needing to reload the whole package
+---Reloads a file from <code>Client/</code> or <code>Shared/</code> folder and sends the updated version to clients, triggering the <a href="#event-filereload">FileReload</a> event on them.<br/><br/>The reloaded file will be re-cached and downloaded normally by new connecting clients<br/><br/>Note that this method does use the main network lane, so it is not recommended to be used frequently or with large files in production environments as it may cause network congestion and lag spikes. It is mostly intended for development purposes to allow faster iteration on client files without needing to reload the whole package
 ---@param file_path string @The file path relative to the package root
 function Package.ReloadClientFile(file_path) end
 
 ---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/both.png" height="21"> <b>[Client/Server Side]</b>
 ---<a href="https://docs.nanos-world.com/docs/scripting-reference/static-classes/package#static-function-require">docs</a>
 ---
----Loads a .lua file. Note that this method caches the result, so further calls return the cached value.<br/><br/>We currently support 5 searchers, which are looked in the following order:<ol><li>Relative to <code>current-file-path/</code></li><li>Relative to <code>current-package/Client/</code> or <code>current-package/Server/</code> (depending on your side)</li><li>Relative to <code>current-package/Shared/</code></li><li>Relative to <code>current-package/</code></li><li>Relative to <code>Packages/</code></li></ol><p>Note: Clients will only download and have access to <code>Client/</code> and <code>Shared/</code> folders.</p>
+---Loads a .lua file.<br/><br/>Note that this method caches the result, so further calls return the cached value.<br/><br/>We currently support 5 searchers, which are looked in the following order:<ol><li>Relative to <code>current-file-path/</code></li><li>Relative to <code>current-package/Client/</code> or <code>current-package/Server/</code> (depending on your side)</li><li>Relative to <code>current-package/Shared/</code></li><li>Relative to <code>current-package/</code></li><li>Relative to <code>Packages/</code></li></ol><p>Note: Clients will only download and have access to <code>Client/</code> and <code>Shared/</code> folders.</p>
 ---@param file_path string @Path to the script file to load
 ---@param force_load? boolean @Whether to force loading this file even if it was already loaded (Default: false)
 ---@return any @any return values from the included file
@@ -5281,7 +5499,7 @@ function Package.Require(file_path, force_load) end
 ---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/both.png" height="21"> <b>[Client/Server Side]</b>
 ---<a href="https://docs.nanos-world.com/docs/scripting-reference/static-classes/package#static-function-setpersistentdata">docs</a>
 ---
----Sets a Persistent Value which will be saved to disk. Note the actual flush to disk is deferred and may not occur immediately
+---Sets a Persistent Value which will be saved to disk.<br/><br/>Note the actual flush to disk is deferred and may not occur immediately
 ---@param key string @Key to index data into. It can be separated by '.' to set a child element.
 ---@param value any @Value to set at the key
 function Package.SetPersistentData(key, value) end
@@ -5292,16 +5510,16 @@ function Package.SetPersistentData(key, value) end
 ---@param event_name string @Name of the event to subscribe to
 ---@param callback function @Function to call when the event is triggered
 ---@return function @The callback function passed
----@overload fun(event_name: "FileReload", callback: fun(file_path: string)): fun(file_path: string) @Called when a file is directly reloaded from the server using <a href="#static-function-reloadclientfile">Package.ReloadClientFile()</a><br/><br/>You can use the path to reload the file in runtime with <a href="#static-function-require">Package.Require(path, true)</a>
----@overload fun(event_name: "Load", callback: fun()): fun() @Called when this package is loaded<br/><br/>This event is triggered differently depending on the situation:<br/><ul><li>When the <b>server starts</b> or you run <code>package reload all</code> the event triggers only after ALL packages are loaded.</li><li>In all other cases (<code>package load/reload</code> or <code>Package.Load/Reload</code>) the event is triggered immediately after the package is loaded/reloaded.</li></ul>
+---@overload fun(event_name: "FileReload", callback: fun(file_path: string)): fun(file_path: string) @Called when a file is directly reloaded from the server using <a href="#static-function-reloadclientfile">Package.ReloadClientFile()</a>.<br/><br/>You can use the path to reload the file in runtime with <a href="#static-function-require">Package.Require(path, true)</a>
+---@overload fun(event_name: "Load", callback: fun()): fun() @Called when this package is loaded.<br/><br/>This event is triggered differently depending on the situation:<br/><ul><li>When the <b>server starts</b> or you run <code>package reload all</code> the event triggers only after ALL packages are loaded.</li><li>In all other cases (<code>package load/reload</code> or <code>Package.Load/Reload</code>) the event is triggered immediately after the package is loaded/reloaded.</li></ul>
 ---@overload fun(event_name: "Unload", callback: fun()): fun() @Called when this package is unloaded
 function Package.Subscribe(event_name, callback) end
 
 ---Unsubscribe from an event
 ---@param event_name string @Name of the event to unsubscribe from
 ---@param callback? function @Optional callback to unsubscribe (if no callback is passed then all callbacks in this Package will be unsubscribed from this event)
----@overload fun(event_name: "FileReload", callback: fun(file_path: string)) @Called when a file is directly reloaded from the server using <a href="#static-function-reloadclientfile">Package.ReloadClientFile()</a><br/><br/>You can use the path to reload the file in runtime with <a href="#static-function-require">Package.Require(path, true)</a>
----@overload fun(event_name: "Load", callback: fun()) @Called when this package is loaded<br/><br/>This event is triggered differently depending on the situation:<br/><ul><li>When the <b>server starts</b> or you run <code>package reload all</code> the event triggers only after ALL packages are loaded.</li><li>In all other cases (<code>package load/reload</code> or <code>Package.Load/Reload</code>) the event is triggered immediately after the package is loaded/reloaded.</li></ul>
+---@overload fun(event_name: "FileReload", callback: fun(file_path: string)) @Called when a file is directly reloaded from the server using <a href="#static-function-reloadclientfile">Package.ReloadClientFile()</a>.<br/><br/>You can use the path to reload the file in runtime with <a href="#static-function-require">Package.Require(path, true)</a>
+---@overload fun(event_name: "Load", callback: fun()) @Called when this package is loaded.<br/><br/>This event is triggered differently depending on the situation:<br/><ul><li>When the <b>server starts</b> or you run <code>package reload all</code> the event triggers only after ALL packages are loaded.</li><li>In all other cases (<code>package load/reload</code> or <code>Package.Load/Reload</code>) the event is triggered immediately after the package is loaded/reloaded.</li></ul>
 ---@overload fun(event_name: "Unload", callback: fun()) @Called when this package is unloaded
 function Package.Unsubscribe(event_name, callback) end
 
@@ -5327,6 +5545,20 @@ Paintable = {}
 ---@param custom_values? table @An optional table with custom values to be set in the inherited class table (Default: {})
 ---@return Paintable.Inherited @The new Class table, inheriting from Paintable
 function Paintable.Inherit(name, custom_values) end
+
+---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/both.png" height="21"> <b>[Client/Server Side]</b>
+---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/base-classes/entity#static-function-getall">docs</a>
+---
+---Returns a table containing all Entities of the class this is called on
+---@return Paintable[] @Copy of table containing all Entities
+function Paintable.GetAll() end
+
+---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/both.png" height="21"> <b>[Client/Server Side]</b>
+---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/base-classes/entity#static-function-getpairs">docs</a>
+---
+---Returns an iterator with all Entities of this class to be used with <code>pairs()</code>.<br/><br/>This is a more performant method than <code>GetAll()</code>, as it will return the iterator to access the Entities directly instead of creating and returning a copy of the Entities table.<br><br><b>Note:</b> Destroying Entities from inside a <code>GetPairs()</code> loop will cause the iterable to change size during the process. If you want to loop-and-destroy, please use <code>GetAll()</code>.
+---@return EntityIterator<Paintable> @Iterator with all Entities of this class
+function Paintable.GetPairs() end
 
 ---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/both.png" height="21"> <b>[Client/Server Side]</b>
 ---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/base-classes/paintable#function-getmaterialcolorparameter">docs</a>
@@ -5401,7 +5633,8 @@ function Paintable:SetMaterialColorParameter(parameter_name, color, index, attac
 ---Sets the material at the specified index of this Actor to a Canvas object
 ---@param canvas Canvas @The Canvas object to use as a material
 ---@param index? integer @The material index to apply (<code>-1</code> means all indices) (Default: -1)
-function Paintable:SetMaterialFromCanvas(canvas, index) end
+---@param attachable_id? string @The attachable ID (set with <code>AddSkeletalMeshAttached</code> or <code>AddStaticMeshAttached</code>) to apply the material. Pass empty to set on main mesh only (Default: "")
+function Paintable:SetMaterialFromCanvas(canvas, index, attachable_id) end
 
 ---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/client-only.png" height="21"> <b>[Client Side]</b>
 ---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/base-classes/paintable#function-setmaterialfromscenecapture">docs</a>
@@ -5409,7 +5642,8 @@ function Paintable:SetMaterialFromCanvas(canvas, index) end
 ---Sets the material at the specified index of this Actor to a SceneCapture object
 ---@param scene_capture SceneCapture @The SceneCapture object to use as a material
 ---@param index? integer @The material index to apply (<code>-1</code> means all indices) (Default: -1)
-function Paintable:SetMaterialFromSceneCapture(scene_capture, index) end
+---@param attachable_id? string @The attachable ID (set with <code>AddSkeletalMeshAttached</code> or <code>AddStaticMeshAttached</code>) to apply the material. Pass empty to set on main mesh only (Default: "")
+function Paintable:SetMaterialFromSceneCapture(scene_capture, index, attachable_id) end
 
 ---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/client-only.png" height="21"> <b>[Client Side]</b>
 ---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/base-classes/paintable#function-setmaterialfromwebui">docs</a>
@@ -5417,7 +5651,8 @@ function Paintable:SetMaterialFromSceneCapture(scene_capture, index) end
 ---Sets the material at the specified index of this Actor to a WebUI object
 ---@param webui WebUI @The WebUI object to use as a material
 ---@param index? integer @The material index to apply (<code>-1</code> means all indices) (Default: -1)
-function Paintable:SetMaterialFromWebUI(webui, index) end
+---@param attachable_id? string @The attachable ID (set with <code>AddSkeletalMeshAttached</code> or <code>AddStaticMeshAttached</code>) to apply the material. Pass empty to set on main mesh only (Default: "")
+function Paintable:SetMaterialFromWebUI(webui, index, attachable_id) end
 
 ---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/both.png" height="21"> <b>[Client/Server Side]</b>
 ---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/base-classes/paintable#function-setmaterialscalarparameter">docs</a>
@@ -5434,7 +5669,7 @@ function Paintable:SetMaterialScalarParameter(parameter_name, scalar, index, att
 ---
 ---Sets a texture parameter in this Actor's material to an image
 ---@param parameter_name string @The name of the material parameter
----@param texture_path string @The path to texture, a url or a base64
+---@param texture_path string @The path to texture, a url or a base64. Files on disk are reloaded if overwritten since the last load
 ---@param index? integer @The material index to apply (<code>-1</code> means all indices) (Default: -1)
 ---@param attachable_id? string @The attachable ID (set with <code>AddSkeletalMeshAttached</code> or <code>AddStaticMeshAttached</code>) to apply the material parameter. Pass empty to set on main mesh only (Default: "")
 function Paintable:SetMaterialTextureParameter(parameter_name, texture_path, index, attachable_id) end
@@ -5490,6 +5725,20 @@ function Particle:Constructor(location, rotation, asset, auto_destroy, auto_acti
 ---@param custom_values? table @An optional table with custom values to be set in the inherited class table (Default: {})
 ---@return Particle.Inherited @The new Class table, inheriting from Particle
 function Particle.Inherit(name, custom_values) end
+
+---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/both.png" height="21"> <b>[Client/Server Side]</b>
+---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/base-classes/entity#static-function-getall">docs</a>
+---
+---Returns a table containing all Entities of the class this is called on
+---@return Particle[] @Copy of table containing all Entities
+function Particle.GetAll() end
+
+---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/both.png" height="21"> <b>[Client/Server Side]</b>
+---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/base-classes/entity#static-function-getpairs">docs</a>
+---
+---Returns an iterator with all Entities of this class to be used with <code>pairs()</code>.<br/><br/>This is a more performant method than <code>GetAll()</code>, as it will return the iterator to access the Entities directly instead of creating and returning a copy of the Entities table.<br><br><b>Note:</b> Destroying Entities from inside a <code>GetPairs()</code> loop will cause the iterable to change size during the process. If you want to loop-and-destroy, please use <code>GetAll()</code>.
+---@return EntityIterator<Particle> @Iterator with all Entities of this class
+function Particle.GetPairs() end
 
 ---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/both.png" height="21"> <b>[Client/Server Side]</b>
 ---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/particle#function-activate">docs</a>
@@ -5554,7 +5803,7 @@ function Particle:SetParameterMaterial(parameter, value) end
 ---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/client-only.png" height="21"> <b>[Client Side]</b>
 ---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/particle#function-setparametermaterialfromcanvas">docs</a>
 ---
----This will create a Material and set this Canvas as it's parameter internally, then set the Material into the Particle parameter
+---Sets a Material from a Canvas parameter in this Particle System.<br/><br/>This will create a Material and set this Canvas as it's parameter internally, then set the Material into the Particle parameter
 ---@param parameter string @The parameter name
 ---@param value Canvas @The Canvas value
 function Particle:SetParameterMaterialFromCanvas(parameter, value) end
@@ -5562,7 +5811,7 @@ function Particle:SetParameterMaterialFromCanvas(parameter, value) end
 ---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/client-only.png" height="21"> <b>[Client Side]</b>
 ---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/particle#function-setparametermaterialfromtexture">docs</a>
 ---
----This will create a Material and set this Texture as it's parameter internally, then set the Material into the Particle parameter
+---Sets a Material from a Texture parameter in this Particle System.<br/><br/>This will create a Material and set this Texture as it's parameter internally, then set the Material into the Particle parameter
 ---@param parameter string @The parameter name
 ---@param value string @The Texture value
 function Particle:SetParameterMaterialFromTexture(parameter, value) end
@@ -5570,7 +5819,7 @@ function Particle:SetParameterMaterialFromTexture(parameter, value) end
 ---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/client-only.png" height="21"> <b>[Client Side]</b>
 ---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/particle#function-setparametermaterialfromwebui">docs</a>
 ---
----This will create a Material and set this WebUI as it's parameter internally, then set the Material into the Particle parameter
+---Sets a Material from a Canvas parameter in this Particle System.<br/><br/>This will create a Material and set this WebUI as it's parameter internally, then set the Material into the Particle parameter
 ---@param parameter string @The parameter name
 ---@param value WebUI @The WebUI value
 function Particle:SetParameterMaterialFromWebUI(parameter, value) end
@@ -5605,9 +5854,23 @@ Pawn = {}
 function Pawn.Inherit(name, custom_values) end
 
 ---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/both.png" height="21"> <b>[Client/Server Side]</b>
+---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/base-classes/entity#static-function-getall">docs</a>
+---
+---Returns a table containing all Entities of the class this is called on
+---@return Pawn[] @Copy of table containing all Entities
+function Pawn.GetAll() end
+
+---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/both.png" height="21"> <b>[Client/Server Side]</b>
+---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/base-classes/entity#static-function-getpairs">docs</a>
+---
+---Returns an iterator with all Entities of this class to be used with <code>pairs()</code>.<br/><br/>This is a more performant method than <code>GetAll()</code>, as it will return the iterator to access the Entities directly instead of creating and returning a copy of the Entities table.<br><br><b>Note:</b> Destroying Entities from inside a <code>GetPairs()</code> loop will cause the iterable to change size during the process. If you want to loop-and-destroy, please use <code>GetAll()</code>.
+---@return EntityIterator<Pawn> @Iterator with all Entities of this class
+function Pawn.GetPairs() end
+
+---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/both.png" height="21"> <b>[Client/Server Side]</b>
 ---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/base-classes/pawn#function-addskeletalmeshattached">docs</a>
 ---
----Spawns and attaches a SkeletalMesh to this entity, the SkeletalMesh must have the same skeleton used by this Actor's mesh, and will follow all animations from it. Uses a custom ID to be used for removing/customizing it afterwards
+---Attaches a Skeletal Mesh as master pose to this entity.<br/><br/>Spawns and attaches a SkeletalMesh to this entity, the SkeletalMesh must have the same skeleton used by this Actor's mesh, and will follow all animations from it. Uses a custom ID to be used for removing/customizing it afterwards
 ---@param id string @Used further for removing or applying material settings on it
 ---@param skeletal_mesh_path string @Path to SkeletalMesh asset to attach
 ---@param socket? string @Bone socket to attach to. Pass empty string to attach to the root component (i.e. Capsule). Pass 'root' to attach to the root bone of the main skeletal mesh component (Default: "")
@@ -5622,7 +5885,7 @@ function Pawn:AddSkeletalMeshAttached(id, skeletal_mesh_path, socket, relative_l
 ---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/both.png" height="21"> <b>[Client/Server Side]</b>
 ---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/base-classes/pawn#function-addstaticmeshattached">docs</a>
 ---
----Spawns and attaches a StaticMesh to this entity in a Socket with a relative location and rotation. Uses a custom ID to be used for removing/customizing it afterwards
+---Attaches a Static Mesh to this entity.<br/><br/>Spawns and attaches a StaticMesh to this entity in a Socket with a relative location and rotation. Uses a custom ID to be used for removing/customizing it afterwards
 ---@param id string @Unique ID to assign to the StaticMesh
 ---@param static_mesh_path string @Path to StaticMesh asset to attach
 ---@param socket? string @Bone socket to attach to (Default: "")
@@ -5632,16 +5895,29 @@ function Pawn:AddSkeletalMeshAttached(id, skeletal_mesh_path, socket, relative_l
 ---@param attachable_id? string @Optionally attaches this to another attached static mesh (instead of attaching to the root component) (Default: "")
 function Pawn:AddStaticMeshAttached(id, static_mesh_path, socket, relative_location, relative_rotation, use_parent_bounds, attachable_id) end
 
+---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/both.png" height="21"> <b>[Client/Server Side]</b>
+---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/base-classes/pawn#function-clearmorphtargets">docs</a>
+---
+---Clears all Morph Targets set on this Pawn's Mesh
+function Pawn:ClearMorphTargets() end
+
 ---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/authority-only.png" height="21"> <b>[Authority Side]</b>
 ---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/base-classes/pawn#function-follow">docs</a>
 ---
----AI: Makes this Pawn follow another actor<br/><br/>Triggers event <a href='/docs/scripting-reference/classes/base-classes/pawn#event-movecomplete'>MoveComplete</a>
+---AI: Makes this Pawn follow another actor.<br/><br/>Triggers event <a href='/docs/scripting-reference/classes/base-classes/pawn#event-movecomplete'>MoveComplete</a>
 ---@param actor Actor @Actor to follow
 ---@param acceptance_radius? number @Radius to consider success (Default: 50)
 ---@param stop_on_succeed? boolean @Whether to stop when reaching the target (Default: false)
 ---@param stop_on_fail? boolean @Whether to stop when failed to reach the target (Default: false)
 ---@param update_rate? number @How often to recalculate the AI path (Default: 0.25)
 function Pawn:Follow(actor, acceptance_radius, stop_on_succeed, stop_on_fail, update_rate) end
+
+---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/client-only.png" height="21"> <b>[Client Side]</b>
+---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/base-classes/pawn#function-getallmorphtargetnames">docs</a>
+---
+---Returns a table with all morph targets available.<br/><br/>Returns an empty table if the mesh is not a Skeletal Mesh (CharacterSimple may use a Static Mesh)
+---@return string[] @table with all morph targets available
+function Pawn:GetAllMorphTargetNames() end
 
 ---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/both.png" height="21"> <b>[Client/Server Side]</b>
 ---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/base-classes/pawn#function-getallskeletalmeshattached">docs</a>
@@ -5714,6 +5990,14 @@ function Pawn:GetJumpZVelocity() end
 function Pawn:GetMesh() end
 
 ---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/both.png" height="21"> <b>[Client/Server Side]</b>
+---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/base-classes/pawn#function-getmorphtarget">docs</a>
+---
+---Returns the value of a Morph Target
+---@param name string @Morph Target Name
+---@return number @value of the Morph Target
+function Pawn:GetMorphTarget(name) end
+
+---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/both.png" height="21"> <b>[Client/Server Side]</b>
 ---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/base-classes/pawn#function-getmovingto">docs</a>
 ---
 ---Gets the Moving To location
@@ -5726,6 +6010,13 @@ function Pawn:GetMovingTo() end
 ---Gets the possessing Player
 ---@return Player? @Possessing Player
 function Pawn:GetPlayer() end
+
+---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/both.png" height="21"> <b>[Client/Server Side]</b>
+---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/base-classes/pawn#function-getteam">docs</a>
+---
+---Gets the Team of this Pawn
+---@return integer @The Team, 0 means no team
+function Pawn:GetTeam() end
 
 ---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/both.png" height="21"> <b>[Client/Server Side]</b>
 ---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/base-classes/pawn#function-hidebone">docs</a>
@@ -5751,7 +6042,7 @@ function Pawn:Jump() end
 ---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/authority-only.png" height="21"> <b>[Authority Side]</b>
 ---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/base-classes/pawn#function-moveto">docs</a>
 ---
----AI: Makes this Pawn walk to the Location<br/><br/>Triggers event <a href='/docs/scripting-reference/classes/base-classes/pawn#event-movecomplete'>MoveComplete</a>
+---AI: Makes this Pawn walk to the Location.<br/><br/>While in flying mode (see SetFlyingMode) it flies there in a straight line instead of following the navmesh, so the Location can be in the air<br/><br/>Triggers event <a href='/docs/scripting-reference/classes/base-classes/pawn#event-movecomplete'>MoveComplete</a>
 ---@param location Vector @The destination
 ---@param acceptance_radius? number @Distance from the destination considered as arrived (Default: 50)
 function Pawn:MoveTo(location, acceptance_radius) end
@@ -5791,6 +6082,13 @@ function Pawn:RemoveStaticMeshAttached(id) end
 function Pawn:SetAIAvoidanceSettings(enabled, avoidance_consideration_radius) end
 
 ---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/authority-only.png" height="21"> <b>[Authority Side]</b>
+---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/base-classes/pawn#function-setaistopwithbraking">docs</a>
+---
+---AI: Sets whether the AI brakes to a stop when finishing a movement, instead of stopping instantly.<br/><br/>When enabled, the Pawn keeps its velocity when it reaches the destination and slows down using its own braking settings (see Character:SetBrakingSettings and CharacterSimple:SetBrakingSettings), so it may stop slightly past the acceptance radius. Disabled by default
+---@param enabled boolean @Whether to brake to a stop
+function Pawn:SetAIStopWithBraking(enabled) end
+
+---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/authority-only.png" height="21"> <b>[Authority Side]</b>
 ---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/base-classes/pawn#function-setbrakingsettings">docs</a>
 ---
 ---Sets the Movement Braking Settings of this Pawn
@@ -5819,7 +6117,7 @@ function Pawn:SetCanJump(can_jump) end
 ---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/authority-only.png" height="21"> <b>[Authority Side]</b>
 ---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/base-classes/pawn#function-setcapsulesize">docs</a>
 ---
----Sets this Pawn's Capsule size (will affect Camera location and the Pawn's collision)
+---Sets this Pawn's Capsule size.<br/><br/>It affects the Camera location and the Pawn's collision
 ---@param radius? integer @Pass 0 to auto calculate the radius based on the mesh bounds (Default: 0)
 ---@param half_height? integer @Pass 0 to auto calculate the half height based on the mesh bounds (Default: 0)
 ---@param crouched_half_height? integer @Pass 0 to auto calculate the crouched half height based on the mesh bounds (Default: 0)
@@ -5842,7 +6140,7 @@ function Pawn:SetFlyingMode(flying_mode) end
 ---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/authority-only.png" height="21"> <b>[Authority Side]</b>
 ---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/base-classes/pawn#function-setgravityscale">docs</a>
 ---
----Changes the Gravity Scale of this Pawn (can be negative)
+---Changes the Gravity Scale.<br/><br/>It can be negative
 ---@param gravity_scale number @The new Gravity Scale
 function Pawn:SetGravityScale(gravity_scale) end
 
@@ -5869,6 +6167,14 @@ function Pawn:SetJumpZVelocity(jump_z_velocity) end
 ---@param is_visible? boolean @Whether the mesh is visible (useful for using retargeters using child meshes) (Default: true)
 function Pawn:SetMeshSettings(relative_location, relative_rotation, is_visible) end
 
+---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/both.png" height="21"> <b>[Client/Server Side]</b>
+---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/base-classes/pawn#function-setmorphtarget">docs</a>
+---
+---Sets the value of a Morph Target
+---@param name string @Morph Target Name
+---@param value number @The Morph Target weight, usually from 0 to 1
+function Pawn:SetMorphTarget(name, value) end
+
 ---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/server-only.png" height="21"> <b>[Server Side]</b>
 ---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/base-classes/pawn#function-setragdollondeathenabled">docs</a>
 ---
@@ -5885,6 +6191,13 @@ function Pawn:SetRagdollOnDeathEnabled(is_enabled) end
 ---@param relative_rotation Rotator @New relative rotation
 function Pawn:SetStaticMeshAttachedTransform(id, relative_location, relative_rotation) end
 
+---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/authority-only.png" height="21"> <b>[Authority Side]</b>
+---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/base-classes/pawn#function-setteam">docs</a>
+---
+---Sets a Team which will disable damaging same Team Members
+---@param team integer @0 is neutral and default
+function Pawn:SetTeam(team) end
+
 ---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/both.png" height="21"> <b>[Client/Server Side]</b>
 ---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/base-classes/pawn#function-stopanimation">docs</a>
 ---
@@ -5895,9 +6208,8 @@ function Pawn:StopAnimation(animation_asset) end
 ---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/authority-only.png" height="21"> <b>[Authority Side]</b>
 ---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/base-classes/pawn#function-stopmovement">docs</a>
 ---
----AI: Stops the movement, optionally zeroing the velocity as well (stops even for non AI)<br/><br/>Triggers event <a href='/docs/scripting-reference/classes/base-classes/pawn#event-movecomplete'>MoveComplete</a>
----@param stops_velocity? boolean @Also stops the Pawn's current velocity (Default: false)
-function Pawn:StopMovement(stops_velocity) end
+---AI: Stops MoveTo and Follow navigation.<br/><br/>Triggers event <a href='/docs/scripting-reference/classes/base-classes/pawn#event-movecomplete'>MoveComplete</a>
+function Pawn:StopMovement() end
 
 ---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/both.png" height="21"> <b>[Client/Server Side]</b>
 ---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/base-classes/pawn#function-unhidebone">docs</a>
@@ -5917,9 +6229,9 @@ function Pawn:UnHideBone(bone_name) end
 ---@overload fun(event_name: "Death", callback: fun(self: Pawn, last_damage_taken: integer, last_bone_damaged: string, damage_type_reason: DamageType, hit_from_direction: Vector, instigator?: Player, causer?: Actor)): fun(self: Pawn, last_damage_taken: integer, last_bone_damaged: string, damage_type_reason: DamageType, hit_from_direction: Vector, instigator?: Player, causer?: Actor) @When Entity Dies
 ---@overload fun(event_name: "Destroy", callback: fun(self: Pawn)): fun(self: Pawn) @Triggered when an Entity is destroyed
 ---@overload fun(event_name: "DimensionChange", callback: fun(self: Pawn, old_dimension: integer, new_dimension: integer)): fun(self: Pawn, old_dimension: integer, new_dimension: integer) @Triggered when an Actor changes its dimension
----@overload fun(event_name: "EnterWater", callback: fun(self: Pawn)): fun(self: Pawn) @Triggered when an Actor enters a water body. Only Actors that simulate physics trigger this event, such as <code>Prop</code>, <code>Vehicle</code>, <code>Pickables</code> and <code>Character</code> only.
+---@overload fun(event_name: "EnterWater", callback: fun(self: Pawn)): fun(self: Pawn) @Triggered when an Actor enters a water body.<br/><br/>Only Actors that simulate physics trigger this event, such as <code>Prop</code>, <code>Vehicle</code>, <code>Pickables</code> and <code>Character</code> only.
 ---@overload fun(event_name: "HealthChange", callback: fun(self: Pawn, old_health: integer, new_health: integer)): fun(self: Pawn, old_health: integer, new_health: integer) @When Entity has its Health changed, or because took damage or manually set through scripting or respawning
----@overload fun(event_name: "LeaveWater", callback: fun(self: Pawn)): fun(self: Pawn) @Triggered when an Actor leaves a water body. Only Actors that simulate physics trigger this event, such as <code>Prop</code>, <code>Vehicle</code>, <code>Pickables</code> and <code>Character</code> only.
+---@overload fun(event_name: "LeaveWater", callback: fun(self: Pawn)): fun(self: Pawn) @Triggered when an Actor leaves a water body.<br/><br/>Only Actors that simulate physics trigger this event, such as <code>Prop</code>, <code>Vehicle</code>, <code>Pickables</code> and <code>Character</code> only.
 ---@overload fun(event_name: "MoveComplete", callback: fun(self: Pawn, succeeded: boolean)): fun(self: Pawn, succeeded: boolean) @Called when AI reaches its destination, or when it fails
 ---@overload fun(event_name: "NetworkAuthorityChange", callback: fun(self: Pawn, is_network_authority: boolean)): fun(self: Pawn, is_network_authority: boolean) @Triggered when the local Player gets/loses network authority over this actor
 ---@overload fun(event_name: "Possess", callback: fun(self: Pawn, player: Player)): fun(self: Pawn, player: Player) @When this Pawn is possessed by a Player
@@ -5941,9 +6253,9 @@ function Pawn.Subscribe(event_name, callback) end
 ---@overload fun(self: Pawn, event_name: "Death", callback: fun(self: Pawn, last_damage_taken: integer, last_bone_damaged: string, damage_type_reason: DamageType, hit_from_direction: Vector, instigator?: Player, causer?: Actor)): fun(self: Pawn, last_damage_taken: integer, last_bone_damaged: string, damage_type_reason: DamageType, hit_from_direction: Vector, instigator?: Player, causer?: Actor) @When Entity Dies
 ---@overload fun(self: Pawn, event_name: "Destroy", callback: fun(self: Pawn)): fun(self: Pawn) @Triggered when an Entity is destroyed
 ---@overload fun(self: Pawn, event_name: "DimensionChange", callback: fun(self: Pawn, old_dimension: integer, new_dimension: integer)): fun(self: Pawn, old_dimension: integer, new_dimension: integer) @Triggered when an Actor changes its dimension
----@overload fun(self: Pawn, event_name: "EnterWater", callback: fun(self: Pawn)): fun(self: Pawn) @Triggered when an Actor enters a water body. Only Actors that simulate physics trigger this event, such as <code>Prop</code>, <code>Vehicle</code>, <code>Pickables</code> and <code>Character</code> only.
+---@overload fun(self: Pawn, event_name: "EnterWater", callback: fun(self: Pawn)): fun(self: Pawn) @Triggered when an Actor enters a water body.<br/><br/>Only Actors that simulate physics trigger this event, such as <code>Prop</code>, <code>Vehicle</code>, <code>Pickables</code> and <code>Character</code> only.
 ---@overload fun(self: Pawn, event_name: "HealthChange", callback: fun(self: Pawn, old_health: integer, new_health: integer)): fun(self: Pawn, old_health: integer, new_health: integer) @When Entity has its Health changed, or because took damage or manually set through scripting or respawning
----@overload fun(self: Pawn, event_name: "LeaveWater", callback: fun(self: Pawn)): fun(self: Pawn) @Triggered when an Actor leaves a water body. Only Actors that simulate physics trigger this event, such as <code>Prop</code>, <code>Vehicle</code>, <code>Pickables</code> and <code>Character</code> only.
+---@overload fun(self: Pawn, event_name: "LeaveWater", callback: fun(self: Pawn)): fun(self: Pawn) @Triggered when an Actor leaves a water body.<br/><br/>Only Actors that simulate physics trigger this event, such as <code>Prop</code>, <code>Vehicle</code>, <code>Pickables</code> and <code>Character</code> only.
 ---@overload fun(self: Pawn, event_name: "MoveComplete", callback: fun(self: Pawn, succeeded: boolean)): fun(self: Pawn, succeeded: boolean) @Called when AI reaches its destination, or when it fails
 ---@overload fun(self: Pawn, event_name: "NetworkAuthorityChange", callback: fun(self: Pawn, is_network_authority: boolean)): fun(self: Pawn, is_network_authority: boolean) @Triggered when the local Player gets/loses network authority over this actor
 ---@overload fun(self: Pawn, event_name: "Possess", callback: fun(self: Pawn, player: Player)): fun(self: Pawn, player: Player) @When this Pawn is possessed by a Player
@@ -5963,9 +6275,9 @@ function Pawn:Subscribe(event_name, callback) end
 ---@overload fun(self: Pawn, event_name: "Death", callback: fun(self: Pawn, last_damage_taken: integer, last_bone_damaged: string, damage_type_reason: DamageType, hit_from_direction: Vector, instigator?: Player, causer?: Actor)) @When Entity Dies
 ---@overload fun(self: Pawn, event_name: "Destroy", callback: fun(self: Pawn)) @Triggered when an Entity is destroyed
 ---@overload fun(self: Pawn, event_name: "DimensionChange", callback: fun(self: Pawn, old_dimension: integer, new_dimension: integer)) @Triggered when an Actor changes its dimension
----@overload fun(self: Pawn, event_name: "EnterWater", callback: fun(self: Pawn)) @Triggered when an Actor enters a water body. Only Actors that simulate physics trigger this event, such as <code>Prop</code>, <code>Vehicle</code>, <code>Pickables</code> and <code>Character</code> only.
+---@overload fun(self: Pawn, event_name: "EnterWater", callback: fun(self: Pawn)) @Triggered when an Actor enters a water body.<br/><br/>Only Actors that simulate physics trigger this event, such as <code>Prop</code>, <code>Vehicle</code>, <code>Pickables</code> and <code>Character</code> only.
 ---@overload fun(self: Pawn, event_name: "HealthChange", callback: fun(self: Pawn, old_health: integer, new_health: integer)) @When Entity has its Health changed, or because took damage or manually set through scripting or respawning
----@overload fun(self: Pawn, event_name: "LeaveWater", callback: fun(self: Pawn)) @Triggered when an Actor leaves a water body. Only Actors that simulate physics trigger this event, such as <code>Prop</code>, <code>Vehicle</code>, <code>Pickables</code> and <code>Character</code> only.
+---@overload fun(self: Pawn, event_name: "LeaveWater", callback: fun(self: Pawn)) @Triggered when an Actor leaves a water body.<br/><br/>Only Actors that simulate physics trigger this event, such as <code>Prop</code>, <code>Vehicle</code>, <code>Pickables</code> and <code>Character</code> only.
 ---@overload fun(self: Pawn, event_name: "MoveComplete", callback: fun(self: Pawn, succeeded: boolean)) @Called when AI reaches its destination, or when it fails
 ---@overload fun(self: Pawn, event_name: "NetworkAuthorityChange", callback: fun(self: Pawn, is_network_authority: boolean)) @Triggered when the local Player gets/loses network authority over this actor
 ---@overload fun(self: Pawn, event_name: "Possess", callback: fun(self: Pawn, player: Player)) @When this Pawn is possessed by a Player
@@ -5986,9 +6298,9 @@ function Pawn:Unsubscribe(event_name, callback) end
 ---@overload fun(event_name: "Death", callback: fun(self: Pawn, last_damage_taken: integer, last_bone_damaged: string, damage_type_reason: DamageType, hit_from_direction: Vector, instigator?: Player, causer?: Actor)) @When Entity Dies
 ---@overload fun(event_name: "Destroy", callback: fun(self: Pawn)) @Triggered when an Entity is destroyed
 ---@overload fun(event_name: "DimensionChange", callback: fun(self: Pawn, old_dimension: integer, new_dimension: integer)) @Triggered when an Actor changes its dimension
----@overload fun(event_name: "EnterWater", callback: fun(self: Pawn)) @Triggered when an Actor enters a water body. Only Actors that simulate physics trigger this event, such as <code>Prop</code>, <code>Vehicle</code>, <code>Pickables</code> and <code>Character</code> only.
+---@overload fun(event_name: "EnterWater", callback: fun(self: Pawn)) @Triggered when an Actor enters a water body.<br/><br/>Only Actors that simulate physics trigger this event, such as <code>Prop</code>, <code>Vehicle</code>, <code>Pickables</code> and <code>Character</code> only.
 ---@overload fun(event_name: "HealthChange", callback: fun(self: Pawn, old_health: integer, new_health: integer)) @When Entity has its Health changed, or because took damage or manually set through scripting or respawning
----@overload fun(event_name: "LeaveWater", callback: fun(self: Pawn)) @Triggered when an Actor leaves a water body. Only Actors that simulate physics trigger this event, such as <code>Prop</code>, <code>Vehicle</code>, <code>Pickables</code> and <code>Character</code> only.
+---@overload fun(event_name: "LeaveWater", callback: fun(self: Pawn)) @Triggered when an Actor leaves a water body.<br/><br/>Only Actors that simulate physics trigger this event, such as <code>Prop</code>, <code>Vehicle</code>, <code>Pickables</code> and <code>Character</code> only.
 ---@overload fun(event_name: "MoveComplete", callback: fun(self: Pawn, succeeded: boolean)) @Called when AI reaches its destination, or when it fails
 ---@overload fun(event_name: "NetworkAuthorityChange", callback: fun(self: Pawn, is_network_authority: boolean)) @Triggered when the local Player gets/loses network authority over this actor
 ---@overload fun(event_name: "Possess", callback: fun(self: Pawn, player: Player)) @When this Pawn is possessed by a Player
@@ -6022,9 +6334,23 @@ Pickable = {}
 function Pickable.Inherit(name, custom_values) end
 
 ---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/both.png" height="21"> <b>[Client/Server Side]</b>
+---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/base-classes/entity#static-function-getall">docs</a>
+---
+---Returns a table containing all Entities of the class this is called on
+---@return Pickable[] @Copy of table containing all Entities
+function Pickable.GetAll() end
+
+---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/both.png" height="21"> <b>[Client/Server Side]</b>
+---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/base-classes/entity#static-function-getpairs">docs</a>
+---
+---Returns an iterator with all Entities of this class to be used with <code>pairs()</code>.<br/><br/>This is a more performant method than <code>GetAll()</code>, as it will return the iterator to access the Entities directly instead of creating and returning a copy of the Entities table.<br><br><b>Note:</b> Destroying Entities from inside a <code>GetPairs()</code> loop will cause the iterable to change size during the process. If you want to loop-and-destroy, please use <code>GetAll()</code>.
+---@return EntityIterator<Pickable> @Iterator with all Entities of this class
+function Pickable.GetPairs() end
+
+---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/both.png" height="21"> <b>[Client/Server Side]</b>
 ---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/base-classes/pickable#function-addskeletalmeshattached">docs</a>
 ---
----Spawns and attaches a SkeletalMesh to this entity, the SkeletalMesh must have the same skeleton used by this Actor's mesh, and will follow all animations from it. Uses a custom ID to be used for removing/customizing it afterwards
+---Attaches a Skeletal Mesh as master pose to this entity.<br/><br/>Spawns and attaches a SkeletalMesh to this entity, the SkeletalMesh must have the same skeleton used by this Actor's mesh, and will follow all animations from it. Uses a custom ID to be used for removing/customizing it afterwards
 ---@param id string @Used further for removing or applying material settings on it
 ---@param skeletal_mesh_path string @Path to SkeletalMesh asset to attach
 ---@param socket? string @Bone socket to attach to (Default: "")
@@ -6039,7 +6365,7 @@ function Pickable:AddSkeletalMeshAttached(id, skeletal_mesh_path, socket, relati
 ---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/both.png" height="21"> <b>[Client/Server Side]</b>
 ---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/base-classes/pickable#function-addstaticmeshattached">docs</a>
 ---
----Spawns and attaches a StaticMesh to this Pickable in a Socket with a relative location and rotation. Uses a custom ID to be used for removing/customizing it afterwards
+---Attaches a Static Mesh to this entity.<br/><br/>Spawns and attaches a StaticMesh to this Pickable in a Socket with a relative location and rotation. Uses a custom ID to be used for removing/customizing it afterwards
 ---@param id string @Unique ID to assign to the StaticMesh
 ---@param static_mesh_path string @Path to StaticMesh asset to attach
 ---@param socket? string @Bone socket to attach to (Default: "")
@@ -6135,14 +6461,14 @@ function Pickable:SetAttachmentSettings(relative_location, relative_rotation, so
 ---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/authority-only.png" height="21"> <b>[Authority Side]</b>
 ---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/base-classes/pickable#function-setbuoyancypontoons">docs</a>
 ---
----Sets the spherical Pontoons used to float this entity on Water, overriding the ones automatically calculated from the Mesh bounds and mass.<br/><br/>Pass no value (or an empty table) to go back to the automatically calculated ones.<br/><br/>Pontoons only have an effect on Maps with Water Buoyancy enabled
+---Sets the Buoyancy Pontoons used by the Water simulation.<br/><br/>Sets the spherical Pontoons used to float this entity on Water, overriding the ones automatically calculated from the Mesh bounds and mass.<br/><br/>Pass no value (or an empty table) to go back to the automatically calculated ones.<br/><br/>Pontoons only have an effect on Maps with Water Buoyancy enabled
 ---@param pontoons? { Offset: Vector, Radius: number } @Array with the Pontoons, or nil to restore the automatically calculated ones (Default: nil)
 function Pickable:SetBuoyancyPontoons(pontoons) end
 
 ---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/authority-only.png" height="21"> <b>[Authority Side]</b>
 ---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/base-classes/pickable#function-setbuoyancysettings">docs</a>
 ---
----Any value passed as nil restores that setting's default.<br/><br/>While the Pontoons are being automatically calculated, changing buoyancy_coefficient also recalculates them, as their radius derives from it.
+---Sets how this entity behaves on Water.<br/><br/>Any value passed as nil restores that setting's default.<br/><br/>While the Pontoons are being automatically calculated, changing buoyancy_coefficient also recalculates them, as their radius derives from it.
 ---@param enabled? boolean @Whether Buoyancy forces are applied at all (Default: true)
 ---@param buoyancy_coefficient? number @How much it floats, the higher the more (Default: 0.1)
 ---@param buoyancy_damp? number @First order damping on the vertical velocity, reduces bobbing (Default: 1000)
@@ -6160,7 +6486,7 @@ function Pickable:SetCanUse(can_use) end
 ---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/base-classes/pickable#function-setcrosshairmaterial">docs</a>
 ---
 ---Sets the crosshair material for this Pickable
----@param material_asset string @Asset path to the crosshair material
+---@param material_asset? string @Asset path to the crosshair material, pass nil or an empty string for no crosshair (Default: nil)
 function Pickable:SetCrosshairMaterial(material_asset) end
 
 ---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/server-only.png" height="21"> <b>[Server Side]</b>
@@ -6188,10 +6514,10 @@ function Pickable:SetStaticMeshAttachedTransform(id, relative_location, relative
 ---@overload fun(event_name: "Destroy", callback: fun(self: Pickable)): fun(self: Pickable) @Triggered when an Entity is destroyed
 ---@overload fun(event_name: "DimensionChange", callback: fun(self: Pickable, old_dimension: integer, new_dimension: integer)): fun(self: Pickable, old_dimension: integer, new_dimension: integer) @Triggered when an Actor changes its dimension
 ---@overload fun(event_name: "Drop", callback: fun(self: Pickable, character: Character, was_triggered_by_player: boolean)): fun(self: Pickable, character: Character, was_triggered_by_player: boolean) @When a Character drops this Pickable
----@overload fun(event_name: "EnterWater", callback: fun(self: Pickable)): fun(self: Pickable) @Triggered when an Actor enters a water body. Only Actors that simulate physics trigger this event, such as <code>Prop</code>, <code>Vehicle</code>, <code>Pickables</code> and <code>Character</code> only.
+---@overload fun(event_name: "EnterWater", callback: fun(self: Pickable)): fun(self: Pickable) @Triggered when an Actor enters a water body.<br/><br/>Only Actors that simulate physics trigger this event, such as <code>Prop</code>, <code>Vehicle</code>, <code>Pickables</code> and <code>Character</code> only.
 ---@overload fun(event_name: "Hit", callback: fun(self: Pickable, impact_force: number, normal_impulse: Vector, impact_location: Vector, velocity: Vector, other_actor?: Actor)): fun(self: Pickable, impact_force: number, normal_impulse: Vector, impact_location: Vector, velocity: Vector, other_actor?: Actor) @When this Pickable hits something
 ---@overload fun(event_name: "Interact", callback: fun(self: Pickable, character: Character): boolean?): fun(self: Pickable, character: Character): boolean? @Triggered when a Character interacts with this Pickable (i.e. tries to pick it up)
----@overload fun(event_name: "LeaveWater", callback: fun(self: Pickable)): fun(self: Pickable) @Triggered when an Actor leaves a water body. Only Actors that simulate physics trigger this event, such as <code>Prop</code>, <code>Vehicle</code>, <code>Pickables</code> and <code>Character</code> only.
+---@overload fun(event_name: "LeaveWater", callback: fun(self: Pickable)): fun(self: Pickable) @Triggered when an Actor leaves a water body.<br/><br/>Only Actors that simulate physics trigger this event, such as <code>Prop</code>, <code>Vehicle</code>, <code>Pickables</code> and <code>Character</code> only.
 ---@overload fun(event_name: "NetworkAuthorityChange", callback: fun(self: Pickable, is_network_authority: boolean)): fun(self: Pickable, is_network_authority: boolean) @Triggered when the local Player gets/loses network authority over this actor
 ---@overload fun(event_name: "PickUp", callback: fun(self: Pickable, character: Character)): fun(self: Pickable, character: Character) @Triggered When a Character picks this up
 ---@overload fun(event_name: "PullUse", callback: fun(self: Pickable, character: Character)): fun(self: Pickable, character: Character) @Triggered when a Character presses the use button for this Pickable (i.e. clicks left mouse button with this equipped)
@@ -6209,10 +6535,10 @@ function Pickable.Subscribe(event_name, callback) end
 ---@overload fun(self: Pickable, event_name: "Destroy", callback: fun(self: Pickable)): fun(self: Pickable) @Triggered when an Entity is destroyed
 ---@overload fun(self: Pickable, event_name: "DimensionChange", callback: fun(self: Pickable, old_dimension: integer, new_dimension: integer)): fun(self: Pickable, old_dimension: integer, new_dimension: integer) @Triggered when an Actor changes its dimension
 ---@overload fun(self: Pickable, event_name: "Drop", callback: fun(self: Pickable, character: Character, was_triggered_by_player: boolean)): fun(self: Pickable, character: Character, was_triggered_by_player: boolean) @When a Character drops this Pickable
----@overload fun(self: Pickable, event_name: "EnterWater", callback: fun(self: Pickable)): fun(self: Pickable) @Triggered when an Actor enters a water body. Only Actors that simulate physics trigger this event, such as <code>Prop</code>, <code>Vehicle</code>, <code>Pickables</code> and <code>Character</code> only.
+---@overload fun(self: Pickable, event_name: "EnterWater", callback: fun(self: Pickable)): fun(self: Pickable) @Triggered when an Actor enters a water body.<br/><br/>Only Actors that simulate physics trigger this event, such as <code>Prop</code>, <code>Vehicle</code>, <code>Pickables</code> and <code>Character</code> only.
 ---@overload fun(self: Pickable, event_name: "Hit", callback: fun(self: Pickable, impact_force: number, normal_impulse: Vector, impact_location: Vector, velocity: Vector, other_actor?: Actor)): fun(self: Pickable, impact_force: number, normal_impulse: Vector, impact_location: Vector, velocity: Vector, other_actor?: Actor) @When this Pickable hits something
 ---@overload fun(self: Pickable, event_name: "Interact", callback: fun(self: Pickable, character: Character): boolean?): fun(self: Pickable, character: Character): boolean? @Triggered when a Character interacts with this Pickable (i.e. tries to pick it up)
----@overload fun(self: Pickable, event_name: "LeaveWater", callback: fun(self: Pickable)): fun(self: Pickable) @Triggered when an Actor leaves a water body. Only Actors that simulate physics trigger this event, such as <code>Prop</code>, <code>Vehicle</code>, <code>Pickables</code> and <code>Character</code> only.
+---@overload fun(self: Pickable, event_name: "LeaveWater", callback: fun(self: Pickable)): fun(self: Pickable) @Triggered when an Actor leaves a water body.<br/><br/>Only Actors that simulate physics trigger this event, such as <code>Prop</code>, <code>Vehicle</code>, <code>Pickables</code> and <code>Character</code> only.
 ---@overload fun(self: Pickable, event_name: "NetworkAuthorityChange", callback: fun(self: Pickable, is_network_authority: boolean)): fun(self: Pickable, is_network_authority: boolean) @Triggered when the local Player gets/loses network authority over this actor
 ---@overload fun(self: Pickable, event_name: "PickUp", callback: fun(self: Pickable, character: Character)): fun(self: Pickable, character: Character) @Triggered When a Character picks this up
 ---@overload fun(self: Pickable, event_name: "PullUse", callback: fun(self: Pickable, character: Character)): fun(self: Pickable, character: Character) @Triggered when a Character presses the use button for this Pickable (i.e. clicks left mouse button with this equipped)
@@ -6228,10 +6554,10 @@ function Pickable:Subscribe(event_name, callback) end
 ---@overload fun(self: Pickable, event_name: "Destroy", callback: fun(self: Pickable)) @Triggered when an Entity is destroyed
 ---@overload fun(self: Pickable, event_name: "DimensionChange", callback: fun(self: Pickable, old_dimension: integer, new_dimension: integer)) @Triggered when an Actor changes its dimension
 ---@overload fun(self: Pickable, event_name: "Drop", callback: fun(self: Pickable, character: Character, was_triggered_by_player: boolean)) @When a Character drops this Pickable
----@overload fun(self: Pickable, event_name: "EnterWater", callback: fun(self: Pickable)) @Triggered when an Actor enters a water body. Only Actors that simulate physics trigger this event, such as <code>Prop</code>, <code>Vehicle</code>, <code>Pickables</code> and <code>Character</code> only.
+---@overload fun(self: Pickable, event_name: "EnterWater", callback: fun(self: Pickable)) @Triggered when an Actor enters a water body.<br/><br/>Only Actors that simulate physics trigger this event, such as <code>Prop</code>, <code>Vehicle</code>, <code>Pickables</code> and <code>Character</code> only.
 ---@overload fun(self: Pickable, event_name: "Hit", callback: fun(self: Pickable, impact_force: number, normal_impulse: Vector, impact_location: Vector, velocity: Vector, other_actor?: Actor)) @When this Pickable hits something
 ---@overload fun(self: Pickable, event_name: "Interact", callback: fun(self: Pickable, character: Character): boolean?) @Triggered when a Character interacts with this Pickable (i.e. tries to pick it up)
----@overload fun(self: Pickable, event_name: "LeaveWater", callback: fun(self: Pickable)) @Triggered when an Actor leaves a water body. Only Actors that simulate physics trigger this event, such as <code>Prop</code>, <code>Vehicle</code>, <code>Pickables</code> and <code>Character</code> only.
+---@overload fun(self: Pickable, event_name: "LeaveWater", callback: fun(self: Pickable)) @Triggered when an Actor leaves a water body.<br/><br/>Only Actors that simulate physics trigger this event, such as <code>Prop</code>, <code>Vehicle</code>, <code>Pickables</code> and <code>Character</code> only.
 ---@overload fun(self: Pickable, event_name: "NetworkAuthorityChange", callback: fun(self: Pickable, is_network_authority: boolean)) @Triggered when the local Player gets/loses network authority over this actor
 ---@overload fun(self: Pickable, event_name: "PickUp", callback: fun(self: Pickable, character: Character)) @Triggered When a Character picks this up
 ---@overload fun(self: Pickable, event_name: "PullUse", callback: fun(self: Pickable, character: Character)) @Triggered when a Character presses the use button for this Pickable (i.e. clicks left mouse button with this equipped)
@@ -6248,10 +6574,10 @@ function Pickable:Unsubscribe(event_name, callback) end
 ---@overload fun(event_name: "Destroy", callback: fun(self: Pickable)) @Triggered when an Entity is destroyed
 ---@overload fun(event_name: "DimensionChange", callback: fun(self: Pickable, old_dimension: integer, new_dimension: integer)) @Triggered when an Actor changes its dimension
 ---@overload fun(event_name: "Drop", callback: fun(self: Pickable, character: Character, was_triggered_by_player: boolean)) @When a Character drops this Pickable
----@overload fun(event_name: "EnterWater", callback: fun(self: Pickable)) @Triggered when an Actor enters a water body. Only Actors that simulate physics trigger this event, such as <code>Prop</code>, <code>Vehicle</code>, <code>Pickables</code> and <code>Character</code> only.
+---@overload fun(event_name: "EnterWater", callback: fun(self: Pickable)) @Triggered when an Actor enters a water body.<br/><br/>Only Actors that simulate physics trigger this event, such as <code>Prop</code>, <code>Vehicle</code>, <code>Pickables</code> and <code>Character</code> only.
 ---@overload fun(event_name: "Hit", callback: fun(self: Pickable, impact_force: number, normal_impulse: Vector, impact_location: Vector, velocity: Vector, other_actor?: Actor)) @When this Pickable hits something
 ---@overload fun(event_name: "Interact", callback: fun(self: Pickable, character: Character): boolean?) @Triggered when a Character interacts with this Pickable (i.e. tries to pick it up)
----@overload fun(event_name: "LeaveWater", callback: fun(self: Pickable)) @Triggered when an Actor leaves a water body. Only Actors that simulate physics trigger this event, such as <code>Prop</code>, <code>Vehicle</code>, <code>Pickables</code> and <code>Character</code> only.
+---@overload fun(event_name: "LeaveWater", callback: fun(self: Pickable)) @Triggered when an Actor leaves a water body.<br/><br/>Only Actors that simulate physics trigger this event, such as <code>Prop</code>, <code>Vehicle</code>, <code>Pickables</code> and <code>Character</code> only.
 ---@overload fun(event_name: "NetworkAuthorityChange", callback: fun(self: Pickable, is_network_authority: boolean)) @Triggered when the local Player gets/loses network authority over this actor
 ---@overload fun(event_name: "PickUp", callback: fun(self: Pickable, character: Character)) @Triggered When a Character picks this up
 ---@overload fun(event_name: "PullUse", callback: fun(self: Pickable, character: Character)) @Triggered when a Character presses the use button for this Pickable (i.e. clicks left mouse button with this equipped)
@@ -6281,6 +6607,20 @@ Player = {}
 ---@param custom_values? table @An optional table with custom values to be set in the inherited class table (Default: {})
 ---@return Player.Inherited @The new Class table, inheriting from Player
 function Player.Inherit(name, custom_values) end
+
+---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/both.png" height="21"> <b>[Client/Server Side]</b>
+---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/base-classes/entity#static-function-getall">docs</a>
+---
+---Returns a table containing all Entities of the class this is called on
+---@return Player[] @Copy of table containing all Entities
+function Player.GetAll() end
+
+---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/both.png" height="21"> <b>[Client/Server Side]</b>
+---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/base-classes/entity#static-function-getpairs">docs</a>
+---
+---Returns an iterator with all Entities of this class to be used with <code>pairs()</code>.<br/><br/>This is a more performant method than <code>GetAll()</code>, as it will return the iterator to access the Entities directly instead of creating and returning a copy of the Entities table.<br><br><b>Note:</b> Destroying Entities from inside a <code>GetPairs()</code> loop will cause the iterable to change size during the process. If you want to loop-and-destroy, please use <code>GetAll()</code>.
+---@return EntityIterator<Player> @Iterator with all Entities of this class
+function Player.GetPairs() end
 
 ---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/server-only.png" height="21"> <b>[Server Side]</b>
 ---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/player#static-function-getbysteamid">docs</a>
@@ -6521,14 +6861,14 @@ function Player:SetDimension(dimension) end
 ---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/server-only.png" height="21"> <b>[Server Side]</b>
 ---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/player#function-setdistanceoptimizationmultiplier">docs</a>
 ---
----Sets the multiplier for how much this Player's is affected by distance optimization from other actors.<br/>A value of 0 disables optimization. Values under 1 decrease the effect, while values over 1 increase it
+---Sets the multiplier for how much this Player's is affected by distance optimization from other actors.<br/><br/>A value of 0 disables optimization. Values under 1 decrease the effect, while values over 1 increase it
 ---@param multiplier number @The new multiplier for how much this Player's is affected by distance optimization from other actors
 function Player:SetDistanceOptimizationMultiplier(multiplier) end
 
 ---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/both.png" height="21"> <b>[Client/Server Side]</b>
 ---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/player#function-setmanualcamerafade">docs</a>
 ---
----Turns on camera fading at the given opacity. Does not auto-animate, allowing user to animate themselves. Call StopCameraFade to turn fading back off.
+---Turns on camera fading at the given opacity.<br/><br/>Does not auto-animate, allowing user to animate themselves. Call StopCameraFade to turn fading back off.
 ---@param in_fade_amount number @Range [0..1], where 0 is fully transparent and 1 is fully opaque solid color.
 ---@param color Color @The color to use
 ---@param in_fade_audio boolean @Whether to fade the audio as well
@@ -6559,14 +6899,14 @@ function Player:SetVOIPGlobalChannelSetting(channel, setting) end
 ---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/both.png" height="21"> <b>[Client/Server Side]</b>
 ---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/player#function-setvoipglobalhighpassfilter">docs</a>
 ---
----Sets the global VOIP high-pass filter threshold frequency. Set it to 0 to disable it
+---Sets the global VOIP high-pass filter threshold frequency.<br/><br/>Set it to 0 to disable it
 ---@param threshold integer @The new global VOIP high-pass filter threshold frequency
 function Player:SetVOIPGlobalHighPassFilter(threshold) end
 
 ---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/both.png" height="21"> <b>[Client/Server Side]</b>
 ---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/player#function-setvoipgloballowpassfilter">docs</a>
 ---
----Sets the global VOIP low-pass filter threshold frequency. Set it to 0 to disable it
+---Sets the global VOIP low-pass filter threshold frequency.<br/><br/>Set it to 0 to disable it
 ---@param threshold integer @The new global VOIP low-pass filter threshold frequency
 function Player:SetVOIPGlobalLowPassFilter(threshold) end
 
@@ -6601,7 +6941,7 @@ function Player:SetVOIPLocalVolume(volume) end
 ---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/both.png" height="21"> <b>[Client/Server Side]</b>
 ---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/player#function-setvoipmuted">docs</a>
 ---
----Mutes or unmutes VOIP for this player
+---Mutes or unmutes VOIP for this player.<br/><br/>On server side, the player is muted for everyone. On client side, it is a local mute only.
 ---@param is_muted boolean @Whether VOIP is muted
 function Player:SetVOIPMuted(is_muted) end
 
@@ -6616,7 +6956,7 @@ function Player:Spectate(player, blend_speed) end
 ---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/both.png" height="21"> <b>[Client/Server Side]</b>
 ---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/player#function-startcamerafade">docs</a>
 ---
----Does a camera fade to/from a solid color. Animates automatically
+---Does a camera fade to/from a solid color.<br/><br/>Animates automatically
 ---@param from_alpha number @Alpha at which to begin the fade. Range [0..1], where 0 is fully transparent and 1 is fully opaque solid color.
 ---@param to_alpha number @Alpha at which to finish the fade.
 ---@param duration number @How long the fade should take, in seconds.
@@ -6862,6 +7202,20 @@ function Prop:Constructor(location, rotation, asset, collision_type, gravity_ena
 function Prop.Inherit(name, custom_values) end
 
 ---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/both.png" height="21"> <b>[Client/Server Side]</b>
+---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/base-classes/entity#static-function-getall">docs</a>
+---
+---Returns a table containing all Entities of the class this is called on
+---@return Prop[] @Copy of table containing all Entities
+function Prop.GetAll() end
+
+---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/both.png" height="21"> <b>[Client/Server Side]</b>
+---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/base-classes/entity#static-function-getpairs">docs</a>
+---
+---Returns an iterator with all Entities of this class to be used with <code>pairs()</code>.<br/><br/>This is a more performant method than <code>GetAll()</code>, as it will return the iterator to access the Entities directly instead of creating and returning a copy of the Entities table.<br><br><b>Note:</b> Destroying Entities from inside a <code>GetPairs()</code> loop will cause the iterable to change size during the process. If you want to loop-and-destroy, please use <code>GetAll()</code>.
+---@return EntityIterator<Prop> @Iterator with all Entities of this class
+function Prop.GetPairs() end
+
+---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/both.png" height="21"> <b>[Client/Server Side]</b>
 ---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/prop#function-getgrabmode">docs</a>
 ---
 ---Gets ability to Grab this Prop
@@ -6896,17 +7250,24 @@ function Prop:GetMassScale() end
 ---@return string @asset name
 function Prop:GetMesh() end
 
+---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/both.png" height="21"> <b>[Client/Server Side]</b>
+---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/prop#function-isonewayinteraction">docs</a>
+---
+---Gets whether one-way interaction is enabled on this Prop
+---@return boolean 
+function Prop:IsOneWayInteraction() end
+
 ---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/authority-only.png" height="21"> <b>[Authority Side]</b>
 ---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/prop#function-setbuoyancypontoons">docs</a>
 ---
----Sets the spherical Pontoons used to float this entity on Water, overriding the ones automatically calculated from the Mesh bounds and mass.<br/><br/>Pass no value (or an empty table) to go back to the automatically calculated ones.<br/><br/>Pontoons only have an effect on Maps with Water Buoyancy enabled
+---Sets the Buoyancy Pontoons used by the Water simulation.<br/><br/>Sets the spherical Pontoons used to float this entity on Water, overriding the ones automatically calculated from the Mesh bounds and mass.<br/><br/>Pass no value (or an empty table) to go back to the automatically calculated ones.<br/><br/>Pontoons only have an effect on Maps with Water Buoyancy enabled
 ---@param pontoons? { Offset: Vector, Radius: number } @Array with the Pontoons, or nil to restore the automatically calculated ones (Default: nil)
 function Prop:SetBuoyancyPontoons(pontoons) end
 
 ---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/authority-only.png" height="21"> <b>[Authority Side]</b>
 ---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/prop#function-setbuoyancysettings">docs</a>
 ---
----Any value passed as nil restores that setting's default.<br/><br/>While the Pontoons are being automatically calculated, changing buoyancy_coefficient also recalculates them, as their radius derives from it.
+---Sets how this entity behaves on Water.<br/><br/>Any value passed as nil restores that setting's default.<br/><br/>While the Pontoons are being automatically calculated, changing buoyancy_coefficient also recalculates them, as their radius derives from it.
 ---@param enabled? boolean @Whether Buoyancy forces are applied at all (Default: true)
 ---@param buoyancy_coefficient? number @How much it floats, the higher the more (Default: 0.1)
 ---@param buoyancy_damp? number @First order damping on the vertical velocity, reduces bobbing (Default: 1000)
@@ -6949,6 +7310,13 @@ function Prop:SetMassScale(scale) end
 function Prop:SetMesh(asset) end
 
 ---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/authority-only.png" height="21"> <b>[Authority Side]</b>
+---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/prop#function-setonewayinteraction">docs</a>
+---
+---Sets whether this Prop treats every physics body without it as infinitely heavy, so they push it around but never get pushed back
+---@param one_way_interaction boolean 
+function Prop:SetOneWayInteraction(one_way_interaction) end
+
+---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/authority-only.png" height="21"> <b>[Authority Side]</b>
 ---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/prop#function-setphysicsdamping">docs</a>
 ---
 ---Sets the Physics damping of this Prop
@@ -6964,11 +7332,11 @@ function Prop:SetPhysicsDamping(linear_damping, angular_damping) end
 ---@overload fun(event_name: "ClassRegister", callback: fun(class: table)): fun(class: table) @Triggered when a new Class is registered with the <a href='/docs/core-concepts/scripting/inheriting-classes'>Inheriting System</a>
 ---@overload fun(event_name: "Destroy", callback: fun(self: Prop)): fun(self: Prop) @Triggered when an Entity is destroyed
 ---@overload fun(event_name: "DimensionChange", callback: fun(self: Prop, old_dimension: integer, new_dimension: integer)): fun(self: Prop, old_dimension: integer, new_dimension: integer) @Triggered when an Actor changes its dimension
----@overload fun(event_name: "EnterWater", callback: fun(self: Prop)): fun(self: Prop) @Triggered when an Actor enters a water body. Only Actors that simulate physics trigger this event, such as <code>Prop</code>, <code>Vehicle</code>, <code>Pickables</code> and <code>Character</code> only.
+---@overload fun(event_name: "EnterWater", callback: fun(self: Prop)): fun(self: Prop) @Triggered when an Actor enters a water body.<br/><br/>Only Actors that simulate physics trigger this event, such as <code>Prop</code>, <code>Vehicle</code>, <code>Pickables</code> and <code>Character</code> only.
 ---@overload fun(event_name: "Grab", callback: fun(self: Prop, character: Character)): fun(self: Prop, character: Character) @Triggered when Character grabs a Prop
 ---@overload fun(event_name: "Hit", callback: fun(self: Prop, impact_force: number, normal_impulse: Vector, impact_location: Vector, velocity: Vector, other_actor?: Actor)): fun(self: Prop, impact_force: number, normal_impulse: Vector, impact_location: Vector, velocity: Vector, other_actor?: Actor) @Triggered when this Prop hits something
 ---@overload fun(event_name: "Interact", callback: fun(self: Prop, character: Character): boolean?): fun(self: Prop, character: Character): boolean? @When a Character interacts with this Prop (i.e. try to Grab it)
----@overload fun(event_name: "LeaveWater", callback: fun(self: Prop)): fun(self: Prop) @Triggered when an Actor leaves a water body. Only Actors that simulate physics trigger this event, such as <code>Prop</code>, <code>Vehicle</code>, <code>Pickables</code> and <code>Character</code> only.
+---@overload fun(event_name: "LeaveWater", callback: fun(self: Prop)): fun(self: Prop) @Triggered when an Actor leaves a water body.<br/><br/>Only Actors that simulate physics trigger this event, such as <code>Prop</code>, <code>Vehicle</code>, <code>Pickables</code> and <code>Character</code> only.
 ---@overload fun(event_name: "NetworkAuthorityChange", callback: fun(self: Prop, is_network_authority: boolean)): fun(self: Prop, is_network_authority: boolean) @Triggered when the local Player gets/loses network authority over this actor
 ---@overload fun(event_name: "Spawn", callback: fun(self: Prop)): fun(self: Prop) @Triggered when an Entity is spawned/created
 ---@overload fun(event_name: "TakeDamage", callback: fun(self: Prop, damage: integer, bone: string, type: DamageType, from_direction: Vector, instigator?: Player, causer?: Actor)): fun(self: Prop, damage: integer, bone: string, type: DamageType, from_direction: Vector, instigator?: Player, causer?: Actor) @When Prop takes Damage
@@ -6984,11 +7352,11 @@ function Prop.Subscribe(event_name, callback) end
 ---@overload fun(self: Prop, event_name: "ClassRegister", callback: fun(class: table)): fun(class: table) @Triggered when a new Class is registered with the <a href='/docs/core-concepts/scripting/inheriting-classes'>Inheriting System</a>
 ---@overload fun(self: Prop, event_name: "Destroy", callback: fun(self: Prop)): fun(self: Prop) @Triggered when an Entity is destroyed
 ---@overload fun(self: Prop, event_name: "DimensionChange", callback: fun(self: Prop, old_dimension: integer, new_dimension: integer)): fun(self: Prop, old_dimension: integer, new_dimension: integer) @Triggered when an Actor changes its dimension
----@overload fun(self: Prop, event_name: "EnterWater", callback: fun(self: Prop)): fun(self: Prop) @Triggered when an Actor enters a water body. Only Actors that simulate physics trigger this event, such as <code>Prop</code>, <code>Vehicle</code>, <code>Pickables</code> and <code>Character</code> only.
+---@overload fun(self: Prop, event_name: "EnterWater", callback: fun(self: Prop)): fun(self: Prop) @Triggered when an Actor enters a water body.<br/><br/>Only Actors that simulate physics trigger this event, such as <code>Prop</code>, <code>Vehicle</code>, <code>Pickables</code> and <code>Character</code> only.
 ---@overload fun(self: Prop, event_name: "Grab", callback: fun(self: Prop, character: Character)): fun(self: Prop, character: Character) @Triggered when Character grabs a Prop
 ---@overload fun(self: Prop, event_name: "Hit", callback: fun(self: Prop, impact_force: number, normal_impulse: Vector, impact_location: Vector, velocity: Vector, other_actor?: Actor)): fun(self: Prop, impact_force: number, normal_impulse: Vector, impact_location: Vector, velocity: Vector, other_actor?: Actor) @Triggered when this Prop hits something
 ---@overload fun(self: Prop, event_name: "Interact", callback: fun(self: Prop, character: Character): boolean?): fun(self: Prop, character: Character): boolean? @When a Character interacts with this Prop (i.e. try to Grab it)
----@overload fun(self: Prop, event_name: "LeaveWater", callback: fun(self: Prop)): fun(self: Prop) @Triggered when an Actor leaves a water body. Only Actors that simulate physics trigger this event, such as <code>Prop</code>, <code>Vehicle</code>, <code>Pickables</code> and <code>Character</code> only.
+---@overload fun(self: Prop, event_name: "LeaveWater", callback: fun(self: Prop)): fun(self: Prop) @Triggered when an Actor leaves a water body.<br/><br/>Only Actors that simulate physics trigger this event, such as <code>Prop</code>, <code>Vehicle</code>, <code>Pickables</code> and <code>Character</code> only.
 ---@overload fun(self: Prop, event_name: "NetworkAuthorityChange", callback: fun(self: Prop, is_network_authority: boolean)): fun(self: Prop, is_network_authority: boolean) @Triggered when the local Player gets/loses network authority over this actor
 ---@overload fun(self: Prop, event_name: "Spawn", callback: fun(self: Prop)): fun(self: Prop) @Triggered when an Entity is spawned/created
 ---@overload fun(self: Prop, event_name: "TakeDamage", callback: fun(self: Prop, damage: integer, bone: string, type: DamageType, from_direction: Vector, instigator?: Player, causer?: Actor)): fun(self: Prop, damage: integer, bone: string, type: DamageType, from_direction: Vector, instigator?: Player, causer?: Actor) @When Prop takes Damage
@@ -7002,11 +7370,11 @@ function Prop:Subscribe(event_name, callback) end
 ---@overload fun(self: Prop, event_name: "ClassRegister", callback: fun(class: table)) @Triggered when a new Class is registered with the <a href='/docs/core-concepts/scripting/inheriting-classes'>Inheriting System</a>
 ---@overload fun(self: Prop, event_name: "Destroy", callback: fun(self: Prop)) @Triggered when an Entity is destroyed
 ---@overload fun(self: Prop, event_name: "DimensionChange", callback: fun(self: Prop, old_dimension: integer, new_dimension: integer)) @Triggered when an Actor changes its dimension
----@overload fun(self: Prop, event_name: "EnterWater", callback: fun(self: Prop)) @Triggered when an Actor enters a water body. Only Actors that simulate physics trigger this event, such as <code>Prop</code>, <code>Vehicle</code>, <code>Pickables</code> and <code>Character</code> only.
+---@overload fun(self: Prop, event_name: "EnterWater", callback: fun(self: Prop)) @Triggered when an Actor enters a water body.<br/><br/>Only Actors that simulate physics trigger this event, such as <code>Prop</code>, <code>Vehicle</code>, <code>Pickables</code> and <code>Character</code> only.
 ---@overload fun(self: Prop, event_name: "Grab", callback: fun(self: Prop, character: Character)) @Triggered when Character grabs a Prop
 ---@overload fun(self: Prop, event_name: "Hit", callback: fun(self: Prop, impact_force: number, normal_impulse: Vector, impact_location: Vector, velocity: Vector, other_actor?: Actor)) @Triggered when this Prop hits something
 ---@overload fun(self: Prop, event_name: "Interact", callback: fun(self: Prop, character: Character): boolean?) @When a Character interacts with this Prop (i.e. try to Grab it)
----@overload fun(self: Prop, event_name: "LeaveWater", callback: fun(self: Prop)) @Triggered when an Actor leaves a water body. Only Actors that simulate physics trigger this event, such as <code>Prop</code>, <code>Vehicle</code>, <code>Pickables</code> and <code>Character</code> only.
+---@overload fun(self: Prop, event_name: "LeaveWater", callback: fun(self: Prop)) @Triggered when an Actor leaves a water body.<br/><br/>Only Actors that simulate physics trigger this event, such as <code>Prop</code>, <code>Vehicle</code>, <code>Pickables</code> and <code>Character</code> only.
 ---@overload fun(self: Prop, event_name: "NetworkAuthorityChange", callback: fun(self: Prop, is_network_authority: boolean)) @Triggered when the local Player gets/loses network authority over this actor
 ---@overload fun(self: Prop, event_name: "Spawn", callback: fun(self: Prop)) @Triggered when an Entity is spawned/created
 ---@overload fun(self: Prop, event_name: "TakeDamage", callback: fun(self: Prop, damage: integer, bone: string, type: DamageType, from_direction: Vector, instigator?: Player, causer?: Actor)) @When Prop takes Damage
@@ -7021,11 +7389,11 @@ function Prop:Unsubscribe(event_name, callback) end
 ---@overload fun(event_name: "ClassRegister", callback: fun(class: table)) @Triggered when a new Class is registered with the <a href='/docs/core-concepts/scripting/inheriting-classes'>Inheriting System</a>
 ---@overload fun(event_name: "Destroy", callback: fun(self: Prop)) @Triggered when an Entity is destroyed
 ---@overload fun(event_name: "DimensionChange", callback: fun(self: Prop, old_dimension: integer, new_dimension: integer)) @Triggered when an Actor changes its dimension
----@overload fun(event_name: "EnterWater", callback: fun(self: Prop)) @Triggered when an Actor enters a water body. Only Actors that simulate physics trigger this event, such as <code>Prop</code>, <code>Vehicle</code>, <code>Pickables</code> and <code>Character</code> only.
+---@overload fun(event_name: "EnterWater", callback: fun(self: Prop)) @Triggered when an Actor enters a water body.<br/><br/>Only Actors that simulate physics trigger this event, such as <code>Prop</code>, <code>Vehicle</code>, <code>Pickables</code> and <code>Character</code> only.
 ---@overload fun(event_name: "Grab", callback: fun(self: Prop, character: Character)) @Triggered when Character grabs a Prop
 ---@overload fun(event_name: "Hit", callback: fun(self: Prop, impact_force: number, normal_impulse: Vector, impact_location: Vector, velocity: Vector, other_actor?: Actor)) @Triggered when this Prop hits something
 ---@overload fun(event_name: "Interact", callback: fun(self: Prop, character: Character): boolean?) @When a Character interacts with this Prop (i.e. try to Grab it)
----@overload fun(event_name: "LeaveWater", callback: fun(self: Prop)) @Triggered when an Actor leaves a water body. Only Actors that simulate physics trigger this event, such as <code>Prop</code>, <code>Vehicle</code>, <code>Pickables</code> and <code>Character</code> only.
+---@overload fun(event_name: "LeaveWater", callback: fun(self: Prop)) @Triggered when an Actor leaves a water body.<br/><br/>Only Actors that simulate physics trigger this event, such as <code>Prop</code>, <code>Vehicle</code>, <code>Pickables</code> and <code>Character</code> only.
 ---@overload fun(event_name: "NetworkAuthorityChange", callback: fun(self: Prop, is_network_authority: boolean)) @Triggered when the local Player gets/loses network authority over this actor
 ---@overload fun(event_name: "Spawn", callback: fun(self: Prop)) @Triggered when an Entity is spawned/created
 ---@overload fun(event_name: "TakeDamage", callback: fun(self: Prop, damage: integer, bone: string, type: DamageType, from_direction: Vector, instigator?: Player, causer?: Actor)) @When Prop takes Damage
@@ -7251,10 +7619,24 @@ function SceneCapture:Constructor(location, rotation, width, height, render_rate
 ---@return SceneCapture.Inherited @The new Class table, inheriting from SceneCapture
 function SceneCapture.Inherit(name, custom_values) end
 
+---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/both.png" height="21"> <b>[Client/Server Side]</b>
+---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/base-classes/entity#static-function-getall">docs</a>
+---
+---Returns a table containing all Entities of the class this is called on
+---@return SceneCapture[] @Copy of table containing all Entities
+function SceneCapture.GetAll() end
+
+---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/both.png" height="21"> <b>[Client/Server Side]</b>
+---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/base-classes/entity#static-function-getpairs">docs</a>
+---
+---Returns an iterator with all Entities of this class to be used with <code>pairs()</code>.<br/><br/>This is a more performant method than <code>GetAll()</code>, as it will return the iterator to access the Entities directly instead of creating and returning a copy of the Entities table.<br><br><b>Note:</b> Destroying Entities from inside a <code>GetPairs()</code> loop will cause the iterable to change size during the process. If you want to loop-and-destroy, please use <code>GetAll()</code>.
+---@return EntityIterator<SceneCapture> @Iterator with all Entities of this class
+function SceneCapture.GetPairs() end
+
 ---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/client-only.png" height="21"> <b>[Client Side]</b>
 ---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/scenecapture#function-addrenderactor">docs</a>
 ---
----Adds an Actor to the Render Only list<br/><br/>Note: adding one actor to this will make the SceneCapture only to render those Actors.
+---Adds an Actor to the Render Only list.<br/><br/>Note: adding one actor to this will make the SceneCapture only to render those Actors.
 ---@param actor Actor @The Actor to render
 function SceneCapture:AddRenderActor(actor) end
 
@@ -7274,18 +7656,22 @@ function SceneCapture:ClearRenderActors() end
 ---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/client-only.png" height="21"> <b>[Client Side]</b>
 ---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/scenecapture#function-encodetobase64">docs</a>
 ---
----Takes a snapshot of the SceneCapture and returns a Base64 of it
+---Takes a snapshot of the SceneCapture and returns a Base64 of it.<br/><br/>Optional output dimensions resize only the encoded image using a smooth, gamma-correct filter. PNG and BMP resizing weights colors by alpha to preserve transparent edges. The capture texture is unchanged. Each omitted dimension keeps its capture size; aspect ratio is not adjusted automatically. Capture at a higher resolution and export at a smaller size for supersampling.
 ---@param image_format? ImageFormat @Which format to generate - JPEG is fastest but discards Alpha channel (Default: ImageFormat.JPEG)
+---@param output_width? integer @Encoded image width in pixels (1 to 4096). If omitted, uses the capture texture width (Default: nil)
+---@param output_height? integer @Encoded image height in pixels (1 to 4096). If omitted, uses the capture texture height (Default: nil)
 ---@return string @The snapshot as a Base64 string
-function SceneCapture:EncodeToBase64(image_format) end
+function SceneCapture:EncodeToBase64(image_format, output_width, output_height) end
 
 ---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/client-only.png" height="21"> <b>[Client Side]</b>
 ---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/scenecapture#function-encodetobase64async">docs</a>
 ---
----Takes a snapshot of the SceneCapture and returns a Base64 of it (asynchronously)
+---Takes a snapshot of the SceneCapture and returns a Base64 of it (asynchronously).<br/><br/>Optional output dimensions resize only the encoded image using a smooth, gamma-correct filter. PNG and BMP resizing weights colors by alpha to preserve transparent edges. The capture texture is unchanged. Each omitted dimension keeps its capture size; aspect ratio is not adjusted automatically. Capture at a higher resolution and export at a smaller size for supersampling.
 ---@param image_format? ImageFormat @Which format to generate - JPEG is fastest but discards Alpha channel (Default: ImageFormat.JPEG)
 ---@param callback function @Callback
-function SceneCapture:EncodeToBase64Async(image_format, callback) end
+---@param output_width? integer @Encoded image width in pixels (1 to 4096). If omitted, uses the capture texture width (Default: nil)
+---@param output_height? integer @Encoded image height in pixels (1 to 4096). If omitted, uses the capture texture height (Default: nil)
+function SceneCapture:EncodeToBase64Async(image_format, callback, output_width, output_height) end
 
 ---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/client-only.png" height="21"> <b>[Client Side]</b>
 ---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/scenecapture#function-removerenderactor">docs</a>
@@ -7324,6 +7710,13 @@ function SceneCapture:SetFOVAngle(angle) end
 function SceneCapture:SetFreeze(freeze) end
 
 ---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/client-only.png" height="21"> <b>[Client Side]</b>
+---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/scenecapture#function-setloddistancefactor">docs</a>
+---
+---Sets the distance scale used to select mesh detail in this SceneCapture.<br/><br/>The default is 2. Values below 1 favor more detail; values above 1 favor less detail. This also affects Nanite detail selection, but does not force a specific LOD or load higher-resolution texture mips. Only this SceneCapture is affected.
+---@param factor number @Finite LOD distance factor between 0.01 and 100
+function SceneCapture:SetLODDistanceFactor(factor) end
+
+---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/client-only.png" height="21"> <b>[Client Side]</b>
 ---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/scenecapture#function-setrenderrate">docs</a>
 ---
 ---Set how frequent is the capture<br>Note: Set to 0 to capture every frame, or -1 to disable auto-capturing
@@ -7333,7 +7726,7 @@ function SceneCapture:SetRenderRate(render_rate) end
 ---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/client-only.png" height="21"> <b>[Client Side]</b>
 ---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/scenecapture#function-setshowflag">docs</a>
 ---
----Enables/Disables rendering features from being captured<br/>A complete list of available flags can be found in the <a href='https://dev.epicgames.com/documentation/en-us/unreal-engine/API/Runtime/Engine/FEngineShowFlags'>Official Unreal Documentation</a>
+---Enables/Disables rendering features from being captured.<br/><br/>A complete list of available flags can be found in the <a href='https://dev.epicgames.com/documentation/en-us/unreal-engine/API/Runtime/Engine/FEngineShowFlags'>Official Unreal Documentation</a>
 ---@param flag string @Name of the Unreal Show Flag, e.g. <code>Fog</code>
 ---@param enable boolean @Whether it is rendered
 function SceneCapture:SetShowFlag(flag, enable) end
@@ -7347,8 +7740,8 @@ function SceneCapture:SetShowFlag(flag, enable) end
 ---@overload fun(event_name: "ClassRegister", callback: fun(class: table)): fun(class: table) @Triggered when a new Class is registered with the <a href='/docs/core-concepts/scripting/inheriting-classes'>Inheriting System</a>
 ---@overload fun(event_name: "Destroy", callback: fun(self: SceneCapture)): fun(self: SceneCapture) @Triggered when an Entity is destroyed
 ---@overload fun(event_name: "DimensionChange", callback: fun(self: SceneCapture, old_dimension: integer, new_dimension: integer)): fun(self: SceneCapture, old_dimension: integer, new_dimension: integer) @Triggered when an Actor changes its dimension
----@overload fun(event_name: "EnterWater", callback: fun(self: SceneCapture)): fun(self: SceneCapture) @Triggered when an Actor enters a water body. Only Actors that simulate physics trigger this event, such as <code>Prop</code>, <code>Vehicle</code>, <code>Pickables</code> and <code>Character</code> only.
----@overload fun(event_name: "LeaveWater", callback: fun(self: SceneCapture)): fun(self: SceneCapture) @Triggered when an Actor leaves a water body. Only Actors that simulate physics trigger this event, such as <code>Prop</code>, <code>Vehicle</code>, <code>Pickables</code> and <code>Character</code> only.
+---@overload fun(event_name: "EnterWater", callback: fun(self: SceneCapture)): fun(self: SceneCapture) @Triggered when an Actor enters a water body.<br/><br/>Only Actors that simulate physics trigger this event, such as <code>Prop</code>, <code>Vehicle</code>, <code>Pickables</code> and <code>Character</code> only.
+---@overload fun(event_name: "LeaveWater", callback: fun(self: SceneCapture)): fun(self: SceneCapture) @Triggered when an Actor leaves a water body.<br/><br/>Only Actors that simulate physics trigger this event, such as <code>Prop</code>, <code>Vehicle</code>, <code>Pickables</code> and <code>Character</code> only.
 ---@overload fun(event_name: "NetworkAuthorityChange", callback: fun(self: SceneCapture, is_network_authority: boolean)): fun(self: SceneCapture, is_network_authority: boolean) @Triggered when the local Player gets/loses network authority over this actor
 ---@overload fun(event_name: "Spawn", callback: fun(self: SceneCapture)): fun(self: SceneCapture) @Triggered when an Entity is spawned/created
 ---@overload fun(event_name: "ValueChange", callback: fun(self: SceneCapture, key: string, value: any)): fun(self: SceneCapture, key: string, value: any) @Triggered when an Entity has a value changed with <code>:SetValue()</code>
@@ -7363,8 +7756,8 @@ function SceneCapture.Subscribe(event_name, callback) end
 ---@overload fun(self: SceneCapture, event_name: "ClassRegister", callback: fun(class: table)): fun(class: table) @Triggered when a new Class is registered with the <a href='/docs/core-concepts/scripting/inheriting-classes'>Inheriting System</a>
 ---@overload fun(self: SceneCapture, event_name: "Destroy", callback: fun(self: SceneCapture)): fun(self: SceneCapture) @Triggered when an Entity is destroyed
 ---@overload fun(self: SceneCapture, event_name: "DimensionChange", callback: fun(self: SceneCapture, old_dimension: integer, new_dimension: integer)): fun(self: SceneCapture, old_dimension: integer, new_dimension: integer) @Triggered when an Actor changes its dimension
----@overload fun(self: SceneCapture, event_name: "EnterWater", callback: fun(self: SceneCapture)): fun(self: SceneCapture) @Triggered when an Actor enters a water body. Only Actors that simulate physics trigger this event, such as <code>Prop</code>, <code>Vehicle</code>, <code>Pickables</code> and <code>Character</code> only.
----@overload fun(self: SceneCapture, event_name: "LeaveWater", callback: fun(self: SceneCapture)): fun(self: SceneCapture) @Triggered when an Actor leaves a water body. Only Actors that simulate physics trigger this event, such as <code>Prop</code>, <code>Vehicle</code>, <code>Pickables</code> and <code>Character</code> only.
+---@overload fun(self: SceneCapture, event_name: "EnterWater", callback: fun(self: SceneCapture)): fun(self: SceneCapture) @Triggered when an Actor enters a water body.<br/><br/>Only Actors that simulate physics trigger this event, such as <code>Prop</code>, <code>Vehicle</code>, <code>Pickables</code> and <code>Character</code> only.
+---@overload fun(self: SceneCapture, event_name: "LeaveWater", callback: fun(self: SceneCapture)): fun(self: SceneCapture) @Triggered when an Actor leaves a water body.<br/><br/>Only Actors that simulate physics trigger this event, such as <code>Prop</code>, <code>Vehicle</code>, <code>Pickables</code> and <code>Character</code> only.
 ---@overload fun(self: SceneCapture, event_name: "NetworkAuthorityChange", callback: fun(self: SceneCapture, is_network_authority: boolean)): fun(self: SceneCapture, is_network_authority: boolean) @Triggered when the local Player gets/loses network authority over this actor
 ---@overload fun(self: SceneCapture, event_name: "Spawn", callback: fun(self: SceneCapture)): fun(self: SceneCapture) @Triggered when an Entity is spawned/created
 ---@overload fun(self: SceneCapture, event_name: "ValueChange", callback: fun(self: SceneCapture, key: string, value: any)): fun(self: SceneCapture, key: string, value: any) @Triggered when an Entity has a value changed with <code>:SetValue()</code>
@@ -7377,8 +7770,8 @@ function SceneCapture:Subscribe(event_name, callback) end
 ---@overload fun(self: SceneCapture, event_name: "ClassRegister", callback: fun(class: table)) @Triggered when a new Class is registered with the <a href='/docs/core-concepts/scripting/inheriting-classes'>Inheriting System</a>
 ---@overload fun(self: SceneCapture, event_name: "Destroy", callback: fun(self: SceneCapture)) @Triggered when an Entity is destroyed
 ---@overload fun(self: SceneCapture, event_name: "DimensionChange", callback: fun(self: SceneCapture, old_dimension: integer, new_dimension: integer)) @Triggered when an Actor changes its dimension
----@overload fun(self: SceneCapture, event_name: "EnterWater", callback: fun(self: SceneCapture)) @Triggered when an Actor enters a water body. Only Actors that simulate physics trigger this event, such as <code>Prop</code>, <code>Vehicle</code>, <code>Pickables</code> and <code>Character</code> only.
----@overload fun(self: SceneCapture, event_name: "LeaveWater", callback: fun(self: SceneCapture)) @Triggered when an Actor leaves a water body. Only Actors that simulate physics trigger this event, such as <code>Prop</code>, <code>Vehicle</code>, <code>Pickables</code> and <code>Character</code> only.
+---@overload fun(self: SceneCapture, event_name: "EnterWater", callback: fun(self: SceneCapture)) @Triggered when an Actor enters a water body.<br/><br/>Only Actors that simulate physics trigger this event, such as <code>Prop</code>, <code>Vehicle</code>, <code>Pickables</code> and <code>Character</code> only.
+---@overload fun(self: SceneCapture, event_name: "LeaveWater", callback: fun(self: SceneCapture)) @Triggered when an Actor leaves a water body.<br/><br/>Only Actors that simulate physics trigger this event, such as <code>Prop</code>, <code>Vehicle</code>, <code>Pickables</code> and <code>Character</code> only.
 ---@overload fun(self: SceneCapture, event_name: "NetworkAuthorityChange", callback: fun(self: SceneCapture, is_network_authority: boolean)) @Triggered when the local Player gets/loses network authority over this actor
 ---@overload fun(self: SceneCapture, event_name: "Spawn", callback: fun(self: SceneCapture)) @Triggered when an Entity is spawned/created
 ---@overload fun(self: SceneCapture, event_name: "ValueChange", callback: fun(self: SceneCapture, key: string, value: any)) @Triggered when an Entity has a value changed with <code>:SetValue()</code>
@@ -7392,8 +7785,8 @@ function SceneCapture:Unsubscribe(event_name, callback) end
 ---@overload fun(event_name: "ClassRegister", callback: fun(class: table)) @Triggered when a new Class is registered with the <a href='/docs/core-concepts/scripting/inheriting-classes'>Inheriting System</a>
 ---@overload fun(event_name: "Destroy", callback: fun(self: SceneCapture)) @Triggered when an Entity is destroyed
 ---@overload fun(event_name: "DimensionChange", callback: fun(self: SceneCapture, old_dimension: integer, new_dimension: integer)) @Triggered when an Actor changes its dimension
----@overload fun(event_name: "EnterWater", callback: fun(self: SceneCapture)) @Triggered when an Actor enters a water body. Only Actors that simulate physics trigger this event, such as <code>Prop</code>, <code>Vehicle</code>, <code>Pickables</code> and <code>Character</code> only.
----@overload fun(event_name: "LeaveWater", callback: fun(self: SceneCapture)) @Triggered when an Actor leaves a water body. Only Actors that simulate physics trigger this event, such as <code>Prop</code>, <code>Vehicle</code>, <code>Pickables</code> and <code>Character</code> only.
+---@overload fun(event_name: "EnterWater", callback: fun(self: SceneCapture)) @Triggered when an Actor enters a water body.<br/><br/>Only Actors that simulate physics trigger this event, such as <code>Prop</code>, <code>Vehicle</code>, <code>Pickables</code> and <code>Character</code> only.
+---@overload fun(event_name: "LeaveWater", callback: fun(self: SceneCapture)) @Triggered when an Actor leaves a water body.<br/><br/>Only Actors that simulate physics trigger this event, such as <code>Prop</code>, <code>Vehicle</code>, <code>Pickables</code> and <code>Character</code> only.
 ---@overload fun(event_name: "NetworkAuthorityChange", callback: fun(self: SceneCapture, is_network_authority: boolean)) @Triggered when the local Player gets/loses network authority over this actor
 ---@overload fun(event_name: "Spawn", callback: fun(self: SceneCapture)) @Triggered when an Entity is spawned/created
 ---@overload fun(event_name: "ValueChange", callback: fun(self: SceneCapture, key: string, value: any)) @Triggered when an Entity has a value changed with <code>:SetValue()</code>
@@ -7447,13 +7840,6 @@ function Server.GetActorsInRadius(location, radius, only_classes, dimension) end
 ---Gets a list of all values keys
 ---@return string[] @a list with all values keys
 function Server.GetAllValuesKeys() end
-
----<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/server-only.png" height="21"> <b>[Server Side]</b>
----<a href="https://docs.nanos-world.com/docs/scripting-reference/static-classes/server#static-function-getcompressionlevel">docs</a>
----
----Returns the server Compression Level being used
----@return integer @the server Compression Level
-function Server.GetCompressionLevel() end
 
 ---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/server-only.png" height="21"> <b>[Server Side]</b>
 ---<a href="https://docs.nanos-world.com/docs/scripting-reference/static-classes/server#static-function-getconnectioncount">docs</a>
@@ -7658,7 +8044,7 @@ function Server.LoadPackage(package_folder_name) end
 ---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/server-only.png" height="21"> <b>[Server Side]</b>
 ---<a href="https://docs.nanos-world.com/docs/scripting-reference/static-classes/server#static-function-reloadpackage">docs</a>
 ---
----Reloads a Package<br/>Note: the package is effectively reloaded in the next server tick
+---Reloads a Package on the next server tick.<br/><br/>Reloads a Package<br/>Note: the package is effectively reloaded in the next server tick
 ---@param package_folder_name string @The package to reload
 ---@return boolean @if the Package was found
 function Server.ReloadPackage(package_folder_name) end
@@ -7672,7 +8058,7 @@ function Server.Restart() end
 ---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/server-only.png" height="21"> <b>[Server Side]</b>
 ---<a href="https://docs.nanos-world.com/docs/scripting-reference/static-classes/server#static-function-setdefaultentitydimension">docs</a>
 ---
----Sets the default server dimension that entities will spawn in. You can change it before spawning an entity and restore it afterwards to just spawn a specific entity directly on it
+---Sets the default server dimension that entities will spawn in.<br/><br/>You can change it before spawning an entity and restore it afterwards to just spawn a specific entity directly on it
 ---@param default_dimension integer @The new default server dimension that entities will spawn in
 function Server.SetDefaultEntityDimension(default_dimension) end
 
@@ -7748,7 +8134,7 @@ function Server.Unban(account_id) end
 ---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/server-only.png" height="21"> <b>[Server Side]</b>
 ---<a href="https://docs.nanos-world.com/docs/scripting-reference/static-classes/server#static-function-unloadpackage">docs</a>
 ---
----Unloads a Package<br/>Note: the package is effectively unloaded in the next server tick
+---Unloads a Package.<br/><br/>Note: the package is effectively unloaded in the next server tick
 ---@param package_folder_name string @The package you want unload
 ---@return boolean @if the Package was found
 function Server.UnloadPackage(package_folder_name) end
@@ -7759,26 +8145,30 @@ function Server.UnloadPackage(package_folder_name) end
 ---@param event_name string @Name of the event to subscribe to
 ---@param callback function @Function to call when the event is triggered
 ---@return function @The callback function passed
----@overload fun(event_name: "ChangeMap", callback: fun(old_map: string, new_map: string)): fun(old_map: string, new_map: string) @Called when the map changes. This is always called just before Restart event
----@overload fun(event_name: "PlayerConnect", callback: fun(ip: string, player_account_id: string, player_name: string, player_steam_id: string)): fun(ip: string, player_account_id: string, player_name: string, player_steam_id: string) @Called when a player is attempting to connect to the server, before the Player entity is created.<br/><br/>To refuse the connection, call <code>Server.KickByAccountID()</code> or <code>Server.BanByAccountID()</code> with the <code>player_account_id</code> (returning <code>false</code> is deprecated).
+---@overload fun(event_name: "ChangeMap", callback: fun(old_map: string, new_map: string)): fun(old_map: string, new_map: string) @Called when the map changes.<br/><br/>This is always called just before Restart event
+---@overload fun(event_name: "PackageLoad", callback: fun(package_name: string)): fun(package_name: string) @Triggered when any package is loaded
+---@overload fun(event_name: "PackageUnload", callback: fun(package_name: string)): fun(package_name: string) @Triggered when any package is unloaded
+---@overload fun(event_name: "PlayerConnect", callback: fun(ip: string, player_account_id: string, player_name: string, player_steam_id: string)): fun(ip: string, player_account_id: string, player_name: string, player_steam_id: string) @Called when a player is attempting to connect to the server.<br/><br/>It is called before the Player entity is created.<br/><br/>To refuse the connection, call <code>Server.KickByAccountID()</code> or <code>Server.BanByAccountID()</code> with the <code>player_account_id</code> (returning <code>false</code> is deprecated).
 ---@overload fun(event_name: "PlayerDisconnect", callback: fun(ip: string, player_account_id: string, player_name: string, player_steam_id: string, disconnect_reason: string)): fun(ip: string, player_account_id: string, player_name: string, player_steam_id: string, disconnect_reason: string) @Called when a player is disconnecting from the server
 ---@overload fun(event_name: "Restart", callback: fun()): fun() @Triggered when the server is restarting
 ---@overload fun(event_name: "Start", callback: fun()): fun() @Triggered once when the server has started and all packages are loaded
 ---@overload fun(event_name: "Stop", callback: fun()): fun() @Triggered when the server is stopping
----@overload fun(event_name: "Tick", callback: fun(delta_time: number)): fun(delta_time: number) @Triggered every 33ms by default<br/><br/>Caution: Only small operations should be performed here, otherwise this can lead to server lag and delays
+---@overload fun(event_name: "Tick", callback: fun(delta_time: number)): fun(delta_time: number) @Triggered every 33ms by default.<br/><br/>Caution: Only small operations should be performed here, otherwise this can lead to server lag and delays
 ---@overload fun(event_name: "ValueChange", callback: fun(key: string, value: any)): fun(key: string, value: any) @Triggered when a Value is changed with <code>Server.SetValue()</code>
 function Server.Subscribe(event_name, callback) end
 
 ---Unsubscribe from an event
 ---@param event_name string @Name of the event to unsubscribe from
 ---@param callback? function @Optional callback to unsubscribe (if no callback is passed then all callbacks in this Package will be unsubscribed from this event)
----@overload fun(event_name: "ChangeMap", callback: fun(old_map: string, new_map: string)) @Called when the map changes. This is always called just before Restart event
----@overload fun(event_name: "PlayerConnect", callback: fun(ip: string, player_account_id: string, player_name: string, player_steam_id: string)) @Called when a player is attempting to connect to the server, before the Player entity is created.<br/><br/>To refuse the connection, call <code>Server.KickByAccountID()</code> or <code>Server.BanByAccountID()</code> with the <code>player_account_id</code> (returning <code>false</code> is deprecated).
+---@overload fun(event_name: "ChangeMap", callback: fun(old_map: string, new_map: string)) @Called when the map changes.<br/><br/>This is always called just before Restart event
+---@overload fun(event_name: "PackageLoad", callback: fun(package_name: string)) @Triggered when any package is loaded
+---@overload fun(event_name: "PackageUnload", callback: fun(package_name: string)) @Triggered when any package is unloaded
+---@overload fun(event_name: "PlayerConnect", callback: fun(ip: string, player_account_id: string, player_name: string, player_steam_id: string)) @Called when a player is attempting to connect to the server.<br/><br/>It is called before the Player entity is created.<br/><br/>To refuse the connection, call <code>Server.KickByAccountID()</code> or <code>Server.BanByAccountID()</code> with the <code>player_account_id</code> (returning <code>false</code> is deprecated).
 ---@overload fun(event_name: "PlayerDisconnect", callback: fun(ip: string, player_account_id: string, player_name: string, player_steam_id: string, disconnect_reason: string)) @Called when a player is disconnecting from the server
 ---@overload fun(event_name: "Restart", callback: fun()) @Triggered when the server is restarting
 ---@overload fun(event_name: "Start", callback: fun()) @Triggered once when the server has started and all packages are loaded
 ---@overload fun(event_name: "Stop", callback: fun()) @Triggered when the server is stopping
----@overload fun(event_name: "Tick", callback: fun(delta_time: number)) @Triggered every 33ms by default<br/><br/>Caution: Only small operations should be performed here, otherwise this can lead to server lag and delays
+---@overload fun(event_name: "Tick", callback: fun(delta_time: number)) @Triggered every 33ms by default.<br/><br/>Caution: Only small operations should be performed here, otherwise this can lead to server lag and delays
 ---@overload fun(event_name: "ValueChange", callback: fun(key: string, value: any)) @Triggered when a Value is changed with <code>Server.SetValue()</code>
 function Server.Unsubscribe(event_name, callback) end
 
@@ -7861,8 +8251,8 @@ function Sky.SetContrast(contrast) end
 ---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/client-only.png" height="21"> <b>[Client Side]</b>
 ---<a href="https://docs.nanos-world.com/docs/scripting-reference/static-classes/sky#static-function-setfog">docs</a>
 ---
----The fogginess of the scene. The impact this has on fog density is scaled from the Fog Density category
----@param fog_percentage number @Fog amount, from 0 to 100
+---The fogginess of the scene. The impact this has on fog density is scaled from the Fog Density category. With weather spawned it also pins the weather's fog to this value, so later weather changes keep it, until called with nil
+---@param fog_percentage? number @Fog amount, from 0 to 100, or nil to hand the fog back to the weather (Default: nil)
 function Sky.SetFog(fog_percentage) end
 
 ---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/client-only.png" height="21"> <b>[Client Side]</b>
@@ -7881,11 +8271,25 @@ function Sky.SetMoonAngle(yaw, pitch) end
 function Sky.SetMoonGlowIntensity(glow_intensity) end
 
 ---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/client-only.png" height="21"> <b>[Client Side]</b>
+---<a href="https://docs.nanos-world.com/docs/scripting-reference/static-classes/sky#static-function-setmoonlightcolor">docs</a>
+---
+---Sets the Moon Light Color, the color of the light the moon casts at night
+---@param color Color @The new Moon Light Color
+function Sky.SetMoonLightColor(color) end
+
+---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/client-only.png" height="21"> <b>[Client Side]</b>
 ---<a href="https://docs.nanos-world.com/docs/scripting-reference/static-classes/sky#static-function-setmoonlightintensity">docs</a>
 ---
 ---Sets the Moon Light Intensity
 ---@param intensity number @The new Moon Light Intensity
 function Sky.SetMoonLightIntensity(intensity) end
+
+---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/client-only.png" height="21"> <b>[Client Side]</b>
+---<a href="https://docs.nanos-world.com/docs/scripting-reference/static-classes/sky#static-function-setmoonmaterialcolor">docs</a>
+---
+---Sets the Moon Material Color, which tints the moon texture.<br/><br/>Call <code>Reconstruct()</code> afterwards to apply it
+---@param color Color @The new Moon Material Color
+function Sky.SetMoonMaterialColor(color) end
 
 ---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/client-only.png" height="21"> <b>[Client Side]</b>
 ---<a href="https://docs.nanos-world.com/docs/scripting-reference/static-classes/sky#static-function-setmoonphase">docs</a>
@@ -7904,7 +8308,7 @@ function Sky.SetMoonScale(scale) end
 ---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/client-only.png" height="21"> <b>[Client Side]</b>
 ---<a href="https://docs.nanos-world.com/docs/scripting-reference/static-classes/sky#static-function-setmoontexture">docs</a>
 ---
----Sets the Moon Texture<br /><br />Set it to empty to restore the default. After setting it, you must call <code>Sky.Reconstruct()</code> to have it applied properly
+---Sets the Moon Texture.<br/><br/>Set it to empty to restore the default. After setting it, you must call <code>Sky.Reconstruct()</code> to have it applied properly
 ---@param texture string @The new Moon Texture
 function Sky.SetMoonTexture(texture) end
 
@@ -7939,7 +8343,7 @@ function Sky.SetOverallIntensity(intensity) end
 ---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/client-only.png" height="21"> <b>[Client Side]</b>
 ---<a href="https://docs.nanos-world.com/docs/scripting-reference/static-classes/sky#static-function-setskymode">docs</a>
 ---
----Sets the Sky Mode<br /><br />After setting it, you must call <code>Sky.Reconstruct()</code> to have it applied properly
+---Sets the Sky Mode.<br/><br/>After setting it, you must call <code>Sky.Reconstruct()</code> to have it applied properly
 ---@param sky_mode SkyMode @The new Sky Mode
 function Sky.SetSkyMode(sky_mode) end
 
@@ -7977,14 +8381,14 @@ function Sky.SetTimeOfDay(hours, minutes, transition_time) end
 ---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/client-only.png" height="21"> <b>[Client Side]</b>
 ---<a href="https://docs.nanos-world.com/docs/scripting-reference/static-classes/sky#static-function-setvolumetriccloudcolor">docs</a>
 ---
----Sets the Volumetric Cloud Color<br /><br />This is only applied if <code>SetSkyMode(SkyMode.VolumetricClouds)</code> is set
+---Sets the Volumetric Cloud Color.<br/><br/>This is only applied if <code>SetSkyMode(SkyMode.VolumetricClouds)</code> is set
 ---@param color Color @The new Volumetric Cloud Color
 function Sky.SetVolumetricCloudColor(color) end
 
 ---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/client-only.png" height="21"> <b>[Client Side]</b>
 ---<a href="https://docs.nanos-world.com/docs/scripting-reference/static-classes/sky#static-function-spawn">docs</a>
 ---
----Replaces all Sky/Sun actors with the Ultra Dynamic Sky Actor, to be able to use the functions from this page. Internally this calls <code>Sky.DestroyAllSky()</code> automatically
+---Replaces all Sky/Sun actors with the Ultra Dynamic Sky Actor, to be able to use the functions from this page.<br/><br/>Internally this calls <code>Sky.DestroyAllSky()</code> automatically
 ---@param spawn_weather? boolean @Whether or not to spawn the Weather Actor (to be able to use Weather related methods) (Default: false)
 ---@param find_existing? boolean @Whether or not to try to find existing Sky & Weather Actors spawned in the map, using their references instead (Default: true)
 ---@return boolean @true if an existing Ultra Dynamic Sky Actor was found in the map and its reference was used, false if a new one was spawned
@@ -8031,6 +8435,20 @@ function Sound:Constructor(location, asset, is_2d_sound, auto_destroy, sound_typ
 ---@param custom_values? table @An optional table with custom values to be set in the inherited class table (Default: {})
 ---@return Sound.Inherited @The new Class table, inheriting from Sound
 function Sound.Inherit(name, custom_values) end
+
+---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/both.png" height="21"> <b>[Client/Server Side]</b>
+---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/base-classes/entity#static-function-getall">docs</a>
+---
+---Returns a table containing all Entities of the class this is called on
+---@return Sound[] @Copy of table containing all Entities
+function Sound.GetAll() end
+
+---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/both.png" height="21"> <b>[Client/Server Side]</b>
+---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/base-classes/entity#static-function-getpairs">docs</a>
+---
+---Returns an iterator with all Entities of this class to be used with <code>pairs()</code>.<br/><br/>This is a more performant method than <code>GetAll()</code>, as it will return the iterator to access the Entities directly instead of creating and returning a copy of the Entities table.<br><br><b>Note:</b> Destroying Entities from inside a <code>GetPairs()</code> loop will cause the iterable to change size during the process. If you want to loop-and-destroy, please use <code>GetAll()</code>.
+---@return EntityIterator<Sound> @Iterator with all Entities of this class
+function Sound.GetPairs() end
 
 ---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/client-only.png" height="21"> <b>[Client Side]</b>
 ---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/sound#function-fadein">docs</a>
@@ -8217,6 +8635,20 @@ function StaticMesh:Constructor(location, rotation, static_mesh_asset, collision
 function StaticMesh.Inherit(name, custom_values) end
 
 ---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/both.png" height="21"> <b>[Client/Server Side]</b>
+---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/base-classes/entity#static-function-getall">docs</a>
+---
+---Returns a table containing all Entities of the class this is called on
+---@return StaticMesh[] @Copy of table containing all Entities
+function StaticMesh.GetAll() end
+
+---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/both.png" height="21"> <b>[Client/Server Side]</b>
+---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/base-classes/entity#static-function-getpairs">docs</a>
+---
+---Returns an iterator with all Entities of this class to be used with <code>pairs()</code>.<br/><br/>This is a more performant method than <code>GetAll()</code>, as it will return the iterator to access the Entities directly instead of creating and returning a copy of the Entities table.<br><br><b>Note:</b> Destroying Entities from inside a <code>GetPairs()</code> loop will cause the iterable to change size during the process. If you want to loop-and-destroy, please use <code>GetAll()</code>.
+---@return EntityIterator<StaticMesh> @Iterator with all Entities of this class
+function StaticMesh.GetPairs() end
+
+---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/both.png" height="21"> <b>[Client/Server Side]</b>
 ---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/staticmesh#function-getmesh">docs</a>
 ---
 ---Gets the Asset path mesh used
@@ -8245,6 +8677,27 @@ function StaticMesh:SetMesh(static_mesh_asset) end
 Steam = {}
 
 ---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/client-only.png" height="21"> <b>[Client Side]</b>
+---<a href="https://docs.nanos-world.com/docs/scripting-reference/static-classes/steam#static-function-getjoinedfromfriend">docs</a>
+---
+---Gets the SteamID of the Friend whose invite or "Join Game" brought this player to the current server.<br/><br/>It is <code>nil</code> if they connected any other way.<br/><br/>This value is reported by the client, so a server should not trust it blindly (e.g. ask the Friend to accept before adding the player to a private group).
+---@return string? @The Friend's SteamID, or <code>nil</code>
+function Steam.GetJoinedFromFriend() end
+
+---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/client-only.png" height="21"> <b>[Client Side]</b>
+---<a href="https://docs.nanos-world.com/docs/scripting-reference/static-classes/steam#static-function-invitefriend">docs</a>
+---
+---Invites a Steam Friend to the current server
+---@param steam_id string @The SteamID of the Friend to invite
+---@return boolean @If the invite was sent
+function Steam.InviteFriend(steam_id) end
+
+---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/client-only.png" height="21"> <b>[Client Side]</b>
+---<a href="https://docs.nanos-world.com/docs/scripting-reference/static-classes/steam#static-function-openinvitedialog">docs</a>
+---
+---Opens the Steam Overlay invite dialog, so the player can invite Friends to the current server.<br/><br/>When a Friend accepts, they join this server and <code>Steam.GetJoinedFromFriend()</code> returns this player's SteamID on their side. If they were already on this server, the <code>FriendJoin</code> event is called instead
+function Steam.OpenInviteDialog() end
+
+---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/client-only.png" height="21"> <b>[Client Side]</b>
 ---<a href="https://docs.nanos-world.com/docs/scripting-reference/static-classes/steam#static-function-setrichpresence">docs</a>
 ---
 ---Sets Steam Rich Presence text
@@ -8256,6 +8709,23 @@ function Steam.SetRichPresence(text) end
 ---
 ---Triggers a Steam screenshot
 function Steam.TriggerScreenshot() end
+
+
+
+---Subscribe to an event
+---@param event_name string @Name of the event to subscribe to
+---@param callback function @Function to call when the event is triggered
+---@return function @The callback function passed
+---@overload fun(event_name: "FriendJoin", callback: fun(friend_steam_id: string)): fun(friend_steam_id: string) @Called when this player accepts a Friend's invite or "Join Game" to the server they are already on.<br/><br/>In this case the player does not reconnect.<br/><br/>When the player connects from another server or from the menus, use <code>Steam.GetJoinedFromFriend()</code> instead.
+function Steam.Subscribe(event_name, callback) end
+
+---Unsubscribe from an event
+---@param event_name string @Name of the event to unsubscribe from
+---@param callback? function @Optional callback to unsubscribe (if no callback is passed then all callbacks in this Package will be unsubscribed from this event)
+---@overload fun(event_name: "FriendJoin", callback: fun(friend_steam_id: string)) @Called when this player accepts a Friend's invite or "Join Game" to the server they are already on.<br/><br/>In this case the player does not reconnect.<br/><br/>When the player connects from another server or from the menus, use <code>Steam.GetJoinedFromFriend()</code> instead.
+function Steam.Unsubscribe(event_name, callback) end
+
+
 
 ---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/both.png" height="21"> <b>[Client/Server Side]</b>
 ---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/text3d">docs</a>
@@ -8292,6 +8762,20 @@ function Text3D:Constructor(location, rotation, text, scale, color, font_type, a
 ---@param custom_values? table @An optional table with custom values to be set in the inherited class table (Default: {})
 ---@return Text3D.Inherited @The new Class table, inheriting from Text3D
 function Text3D.Inherit(name, custom_values) end
+
+---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/both.png" height="21"> <b>[Client/Server Side]</b>
+---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/base-classes/entity#static-function-getall">docs</a>
+---
+---Returns a table containing all Entities of the class this is called on
+---@return Text3D[] @Copy of table containing all Entities
+function Text3D.GetAll() end
+
+---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/both.png" height="21"> <b>[Client/Server Side]</b>
+---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/base-classes/entity#static-function-getpairs">docs</a>
+---
+---Returns an iterator with all Entities of this class to be used with <code>pairs()</code>.<br/><br/>This is a more performant method than <code>GetAll()</code>, as it will return the iterator to access the Entities directly instead of creating and returning a copy of the Entities table.<br><br><b>Note:</b> Destroying Entities from inside a <code>GetPairs()</code> loop will cause the iterable to change size during the process. If you want to loop-and-destroy, please use <code>GetAll()</code>.
+---@return EntityIterator<Text3D> @Iterator with all Entities of this class
+function Text3D.GetPairs() end
 
 ---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/both.png" height="21"> <b>[Client/Server Side]</b>
 ---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/text3d#function-setfont">docs</a>
@@ -8376,6 +8860,20 @@ function TextRender:Constructor(location, rotation, text, word_size, color, rend
 ---@param custom_values? table @An optional table with custom values to be set in the inherited class table (Default: {})
 ---@return TextRender.Inherited @The new Class table, inheriting from TextRender
 function TextRender.Inherit(name, custom_values) end
+
+---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/both.png" height="21"> <b>[Client/Server Side]</b>
+---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/base-classes/entity#static-function-getall">docs</a>
+---
+---Returns a table containing all Entities of the class this is called on
+---@return TextRender[] @Copy of table containing all Entities
+function TextRender.GetAll() end
+
+---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/both.png" height="21"> <b>[Client/Server Side]</b>
+---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/base-classes/entity#static-function-getpairs">docs</a>
+---
+---Returns an iterator with all Entities of this class to be used with <code>pairs()</code>.<br/><br/>This is a more performant method than <code>GetAll()</code>, as it will return the iterator to access the Entities directly instead of creating and returning a copy of the Entities table.<br><br><b>Note:</b> Destroying Entities from inside a <code>GetPairs()</code> loop will cause the iterable to change size during the process. If you want to loop-and-destroy, please use <code>GetAll()</code>.
+---@return EntityIterator<TextRender> @Iterator with all Entities of this class
+function TextRender.GetPairs() end
 
 ---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/both.png" height="21"> <b>[Client/Server Side]</b>
 ---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/textrender#function-getcolor">docs</a>
@@ -8545,6 +9043,15 @@ function Timer.SetRemainingTime(timer_id, time) end
 function Timer.SetTimeout(callback, milliseconds, ...) end
 
 ---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/both.png" height="21"> <b>[Client/Server Side]</b>
+---<a href="https://docs.nanos-world.com/docs/scripting-reference/static-classes/timer#static-function-unbind">docs</a>
+---
+---Unbinds a Timer from an Actor it was bound to with Timer.Bind, without clearing or resetting the Timer
+---@param timer_id integer @The Timer ID
+---@param actor Actor @Actor to be unbound
+---@return boolean @true if the Timer was bound to this Actor and got unbound
+function Timer.Unbind(timer_id, actor) end
+
+---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/both.png" height="21"> <b>[Client/Server Side]</b>
 ---<a href="https://docs.nanos-world.com/docs/scripting-reference/utility-libraries/toml">docs</a>
 ---
 ---TOML library.
@@ -8577,7 +9084,7 @@ Trace = {}
 ---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/client-only.png" height="21"> <b>[Client Side]</b>
 ---<a href="https://docs.nanos-world.com/docs/scripting-reference/static-classes/trace#static-function-boxmulti">docs</a>
 ---
----Trace a box against the world using object types and return overlapping hits and then first blocking hit<br/><br/>Note: The Trace will collide with the ObjectType (in the Collision Settings), even if the channel is ignored below.<br/><br/>Results are sorted, so a blocking hit (if found) will be the last element of the array<br/><br/>Only the single closest blocking result will be generated, no tests will be done after that
+---Trace a box against the world using object types and return overlapping hits and then first blocking hit.<br/><br/>Note: The Trace will collide with the ObjectType (in the Collision Settings), even if the channel is ignored below.<br/><br/>Results are sorted, so a blocking hit (if found) will be the last element of the array<br/><br/>Only the single closest blocking result will be generated, no tests will be done after that
 ---@param start_location Vector @Start location of the box
 ---@param end_location Vector @End location of the box
 ---@param half_size Vector @Distance from the center of box along each axis
@@ -8591,7 +9098,7 @@ function Trace.BoxMulti(start_location, end_location, half_size, orientation, co
 ---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/client-only.png" height="21"> <b>[Client Side]</b>
 ---<a href="https://docs.nanos-world.com/docs/scripting-reference/static-classes/trace#static-function-boxsingle">docs</a>
 ---
----Trace a box against the world and returns a table with the first blocking hit information<br/><br/>Note: The Trace will collide with the ObjectType (in the Collision Settings), even if the channel is ignored below.
+---Trace a box against the world and returns a table with the first blocking hit information.<br/><br/>Note: The Trace will collide with the ObjectType (in the Collision Settings), even if the channel is ignored below.
 ---@param start_location Vector @Start location of the box
 ---@param end_location Vector @End location of the box
 ---@param half_size Vector @Distance from the center of box along each axis
@@ -8605,7 +9112,7 @@ function Trace.BoxSingle(start_location, end_location, half_size, orientation, c
 ---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/client-only.png" height="21"> <b>[Client Side]</b>
 ---<a href="https://docs.nanos-world.com/docs/scripting-reference/static-classes/trace#static-function-capsulemulti">docs</a>
 ---
----Trace a capsule against the world using object types and return overlapping hits and then first blocking hit<br/><br/>Note: The Trace will collide with the ObjectType (in the Collision Settings), even if the channel is ignored below.<br/><br/>Results are sorted, so a blocking hit (if found) will be the last element of the array<br/><br/>Only the single closest blocking result will be generated, no tests will be done after that
+---Trace a capsule against the world using object types and return overlapping hits and then first blocking hit.<br/><br/>Note: The Trace will collide with the ObjectType (in the Collision Settings), even if the channel is ignored below.<br/><br/>Results are sorted, so a blocking hit (if found) will be the last element of the array<br/><br/>Only the single closest blocking result will be generated, no tests will be done after that
 ---@param start_location Vector @Start location of the capsule
 ---@param end_location Vector @End location of the capsule
 ---@param radius number @Radius of the capsule to sweep
@@ -8619,7 +9126,7 @@ function Trace.CapsuleMulti(start_location, end_location, radius, half_height, c
 ---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/client-only.png" height="21"> <b>[Client Side]</b>
 ---<a href="https://docs.nanos-world.com/docs/scripting-reference/static-classes/trace#static-function-capsulesingle">docs</a>
 ---
----Trace a capsule against the world and returns a table with the first blocking hit information<br/><br/>Note: The Trace will collide with the ObjectType (in the Collision Settings), even if the channel is ignored below.
+---Trace a capsule against the world and returns a table with the first blocking hit information.<br/><br/>Note: The Trace will collide with the ObjectType (in the Collision Settings), even if the channel is ignored below.
 ---@param start_location Vector @Start location of the capsule
 ---@param end_location Vector @End location of the capsule
 ---@param radius number @Radius of the capsule to sweep
@@ -8633,7 +9140,7 @@ function Trace.CapsuleSingle(start_location, end_location, radius, half_height, 
 ---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/client-only.png" height="21"> <b>[Client Side]</b>
 ---<a href="https://docs.nanos-world.com/docs/scripting-reference/static-classes/trace#static-function-linemulti">docs</a>
 ---
----Trace a ray against the world using object types and return overlapping hits and then first blocking hit<br/><br/>Note: The Trace will collide with the ObjectType (in the Collision Settings), even if the channel is ignored below.<br/><br/>Results are sorted, so a blocking hit (if found) will be the last element of the array<br/><br/>Only the single closest blocking result will be generated, no tests will be done after that
+---Trace a ray against the world using object types and return overlapping hits and then first blocking hit.<br/><br/>Note: The Trace will collide with the ObjectType (in the Collision Settings), even if the channel is ignored below.<br/><br/>Results are sorted, so a blocking hit (if found) will be the last element of the array<br/><br/>Only the single closest blocking result will be generated, no tests will be done after that
 ---@param start_location Vector @Start location of the ray
 ---@param end_location Vector @End location of the ray
 ---@param collision_channel? CollisionChannel|integer @Supports several channels separating by <code>|</code> (using bit-wise operations) (Default: WorldStatic)
@@ -8645,7 +9152,7 @@ function Trace.LineMulti(start_location, end_location, collision_channel, trace_
 ---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/client-only.png" height="21"> <b>[Client Side]</b>
 ---<a href="https://docs.nanos-world.com/docs/scripting-reference/static-classes/trace#static-function-linesingle">docs</a>
 ---
----Trace a ray against the world and returns a table with the first blocking hit information<br/><br/>Note: The Trace will collide with the ObjectType (in the Collision Settings), even if the channel is ignored below.
+---Trace a ray against the world and returns a table with the first blocking hit information.<br/><br/>Note: The Trace will collide with the ObjectType (in the Collision Settings), even if the channel is ignored below.
 ---@param start_location Vector @Start location of the ray
 ---@param end_location Vector @End location of the ray
 ---@param collision_channel? CollisionChannel|integer @Supports several channels separating by <code>|</code> (using bit-wise operations) (Default: WorldStatic)
@@ -8657,7 +9164,7 @@ function Trace.LineSingle(start_location, end_location, collision_channel, trace
 ---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/client-only.png" height="21"> <b>[Client Side]</b>
 ---<a href="https://docs.nanos-world.com/docs/scripting-reference/static-classes/trace#static-function-spheremulti">docs</a>
 ---
----Trace a sphere against the world using object types and return overlapping hits and then first blocking hit<br/><br/>Note: The Trace will collide with the ObjectType (in the Collision Settings), even if the channel is ignored below.<br/><br/>Results are sorted, so a blocking hit (if found) will be the last element of the array<br/><br/>Only the single closest blocking result will be generated, no tests will be done after that
+---Trace a sphere against the world using object types and return overlapping hits and then first blocking hit.<br/><br/>Note: The Trace will collide with the ObjectType (in the Collision Settings), even if the channel is ignored below.<br/><br/>Results are sorted, so a blocking hit (if found) will be the last element of the array<br/><br/>Only the single closest blocking result will be generated, no tests will be done after that
 ---@param start_location Vector @Start location of the sphere
 ---@param end_location Vector @End location of the sphere
 ---@param radius number @Radius of the sphere
@@ -8670,7 +9177,7 @@ function Trace.SphereMulti(start_location, end_location, radius, collision_chann
 ---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/client-only.png" height="21"> <b>[Client Side]</b>
 ---<a href="https://docs.nanos-world.com/docs/scripting-reference/static-classes/trace#static-function-spheresingle">docs</a>
 ---
----Trace a sphere against the world and returns a table with the first blocking hit information<br/><br/>Note: The Trace will collide with the ObjectType (in the Collision Settings), even if the channel is ignored below.
+---Trace a sphere against the world and returns a table with the first blocking hit information.<br/><br/>Note: The Trace will collide with the ObjectType (in the Collision Settings), even if the channel is ignored below.
 ---@param start_location Vector @Start location of the sphere
 ---@param end_location Vector @End location of the sphere
 ---@param radius number @Radius of the sphere
@@ -8716,11 +9223,33 @@ function Trigger:Constructor(location, rotation, extent, trigger_type, is_visibl
 ---@return Trigger.Inherited @The new Class table, inheriting from Trigger
 function Trigger.Inherit(name, custom_values) end
 
+---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/both.png" height="21"> <b>[Client/Server Side]</b>
+---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/base-classes/entity#static-function-getall">docs</a>
+---
+---Returns a table containing all Entities of the class this is called on
+---@return Trigger[] @Copy of table containing all Entities
+function Trigger.GetAll() end
+
+---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/both.png" height="21"> <b>[Client/Server Side]</b>
+---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/base-classes/entity#static-function-getpairs">docs</a>
+---
+---Returns an iterator with all Entities of this class to be used with <code>pairs()</code>.<br/><br/>This is a more performant method than <code>GetAll()</code>, as it will return the iterator to access the Entities directly instead of creating and returning a copy of the Entities table.<br><br><b>Note:</b> Destroying Entities from inside a <code>GetPairs()</code> loop will cause the iterable to change size during the process. If you want to loop-and-destroy, please use <code>GetAll()</code>.
+---@return EntityIterator<Trigger> @Iterator with all Entities of this class
+function Trigger.GetPairs() end
+
 ---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/authority-only.png" height="21"> <b>[Authority Side]</b>
 ---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/trigger#function-forceoverlapchecking">docs</a>
 ---
 ---Forces an Overlap check to occur, will immediately trigger overlaps
 function Trigger:ForceOverlapChecking() end
+
+---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/authority-only.png" height="21"> <b>[Authority Side]</b>
+---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/trigger#function-isoverlapping">docs</a>
+---
+---Returns if an Actor is inside this Trigger right now.<br/><br/>Tests the Actor's location against the Trigger's shape at the moment of the call
+---@param actor Actor @The Actor to test
+---@return boolean @Whether the Actor is inside
+function Trigger:IsOverlapping(actor) end
 
 ---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/both.png" height="21"> <b>[Client/Server Side]</b>
 ---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/trigger#function-setcolor">docs</a>
@@ -8753,8 +9282,8 @@ function Trigger:SetOverlapOnlyClasses(overlap_only_classes) end
 ---@overload fun(event_name: "Destroy", callback: fun(self: Trigger)): fun(self: Trigger) @Triggered when an Entity is destroyed
 ---@overload fun(event_name: "DimensionChange", callback: fun(self: Trigger, old_dimension: integer, new_dimension: integer)): fun(self: Trigger, old_dimension: integer, new_dimension: integer) @Triggered when an Actor changes its dimension
 ---@overload fun(event_name: "EndOverlap", callback: fun(self: Trigger, entity: Actor)): fun(self: Trigger, entity: Actor) @Triggered when something leaves this Trigger
----@overload fun(event_name: "EnterWater", callback: fun(self: Trigger)): fun(self: Trigger) @Triggered when an Actor enters a water body. Only Actors that simulate physics trigger this event, such as <code>Prop</code>, <code>Vehicle</code>, <code>Pickables</code> and <code>Character</code> only.
----@overload fun(event_name: "LeaveWater", callback: fun(self: Trigger)): fun(self: Trigger) @Triggered when an Actor leaves a water body. Only Actors that simulate physics trigger this event, such as <code>Prop</code>, <code>Vehicle</code>, <code>Pickables</code> and <code>Character</code> only.
+---@overload fun(event_name: "EnterWater", callback: fun(self: Trigger)): fun(self: Trigger) @Triggered when an Actor enters a water body.<br/><br/>Only Actors that simulate physics trigger this event, such as <code>Prop</code>, <code>Vehicle</code>, <code>Pickables</code> and <code>Character</code> only.
+---@overload fun(event_name: "LeaveWater", callback: fun(self: Trigger)): fun(self: Trigger) @Triggered when an Actor leaves a water body.<br/><br/>Only Actors that simulate physics trigger this event, such as <code>Prop</code>, <code>Vehicle</code>, <code>Pickables</code> and <code>Character</code> only.
 ---@overload fun(event_name: "NetworkAuthorityChange", callback: fun(self: Trigger, is_network_authority: boolean)): fun(self: Trigger, is_network_authority: boolean) @Triggered when the local Player gets/loses network authority over this actor
 ---@overload fun(event_name: "Spawn", callback: fun(self: Trigger)): fun(self: Trigger) @Triggered when an Entity is spawned/created
 ---@overload fun(event_name: "ValueChange", callback: fun(self: Trigger, key: string, value: any)): fun(self: Trigger, key: string, value: any) @Triggered when an Entity has a value changed with <code>:SetValue()</code>
@@ -8770,8 +9299,8 @@ function Trigger.Subscribe(event_name, callback) end
 ---@overload fun(self: Trigger, event_name: "Destroy", callback: fun(self: Trigger)): fun(self: Trigger) @Triggered when an Entity is destroyed
 ---@overload fun(self: Trigger, event_name: "DimensionChange", callback: fun(self: Trigger, old_dimension: integer, new_dimension: integer)): fun(self: Trigger, old_dimension: integer, new_dimension: integer) @Triggered when an Actor changes its dimension
 ---@overload fun(self: Trigger, event_name: "EndOverlap", callback: fun(self: Trigger, entity: Actor)): fun(self: Trigger, entity: Actor) @Triggered when something leaves this Trigger
----@overload fun(self: Trigger, event_name: "EnterWater", callback: fun(self: Trigger)): fun(self: Trigger) @Triggered when an Actor enters a water body. Only Actors that simulate physics trigger this event, such as <code>Prop</code>, <code>Vehicle</code>, <code>Pickables</code> and <code>Character</code> only.
----@overload fun(self: Trigger, event_name: "LeaveWater", callback: fun(self: Trigger)): fun(self: Trigger) @Triggered when an Actor leaves a water body. Only Actors that simulate physics trigger this event, such as <code>Prop</code>, <code>Vehicle</code>, <code>Pickables</code> and <code>Character</code> only.
+---@overload fun(self: Trigger, event_name: "EnterWater", callback: fun(self: Trigger)): fun(self: Trigger) @Triggered when an Actor enters a water body.<br/><br/>Only Actors that simulate physics trigger this event, such as <code>Prop</code>, <code>Vehicle</code>, <code>Pickables</code> and <code>Character</code> only.
+---@overload fun(self: Trigger, event_name: "LeaveWater", callback: fun(self: Trigger)): fun(self: Trigger) @Triggered when an Actor leaves a water body.<br/><br/>Only Actors that simulate physics trigger this event, such as <code>Prop</code>, <code>Vehicle</code>, <code>Pickables</code> and <code>Character</code> only.
 ---@overload fun(self: Trigger, event_name: "NetworkAuthorityChange", callback: fun(self: Trigger, is_network_authority: boolean)): fun(self: Trigger, is_network_authority: boolean) @Triggered when the local Player gets/loses network authority over this actor
 ---@overload fun(self: Trigger, event_name: "Spawn", callback: fun(self: Trigger)): fun(self: Trigger) @Triggered when an Entity is spawned/created
 ---@overload fun(self: Trigger, event_name: "ValueChange", callback: fun(self: Trigger, key: string, value: any)): fun(self: Trigger, key: string, value: any) @Triggered when an Entity has a value changed with <code>:SetValue()</code>
@@ -8785,8 +9314,8 @@ function Trigger:Subscribe(event_name, callback) end
 ---@overload fun(self: Trigger, event_name: "Destroy", callback: fun(self: Trigger)) @Triggered when an Entity is destroyed
 ---@overload fun(self: Trigger, event_name: "DimensionChange", callback: fun(self: Trigger, old_dimension: integer, new_dimension: integer)) @Triggered when an Actor changes its dimension
 ---@overload fun(self: Trigger, event_name: "EndOverlap", callback: fun(self: Trigger, entity: Actor)) @Triggered when something leaves this Trigger
----@overload fun(self: Trigger, event_name: "EnterWater", callback: fun(self: Trigger)) @Triggered when an Actor enters a water body. Only Actors that simulate physics trigger this event, such as <code>Prop</code>, <code>Vehicle</code>, <code>Pickables</code> and <code>Character</code> only.
----@overload fun(self: Trigger, event_name: "LeaveWater", callback: fun(self: Trigger)) @Triggered when an Actor leaves a water body. Only Actors that simulate physics trigger this event, such as <code>Prop</code>, <code>Vehicle</code>, <code>Pickables</code> and <code>Character</code> only.
+---@overload fun(self: Trigger, event_name: "EnterWater", callback: fun(self: Trigger)) @Triggered when an Actor enters a water body.<br/><br/>Only Actors that simulate physics trigger this event, such as <code>Prop</code>, <code>Vehicle</code>, <code>Pickables</code> and <code>Character</code> only.
+---@overload fun(self: Trigger, event_name: "LeaveWater", callback: fun(self: Trigger)) @Triggered when an Actor leaves a water body.<br/><br/>Only Actors that simulate physics trigger this event, such as <code>Prop</code>, <code>Vehicle</code>, <code>Pickables</code> and <code>Character</code> only.
 ---@overload fun(self: Trigger, event_name: "NetworkAuthorityChange", callback: fun(self: Trigger, is_network_authority: boolean)) @Triggered when the local Player gets/loses network authority over this actor
 ---@overload fun(self: Trigger, event_name: "Spawn", callback: fun(self: Trigger)) @Triggered when an Entity is spawned/created
 ---@overload fun(self: Trigger, event_name: "ValueChange", callback: fun(self: Trigger, key: string, value: any)) @Triggered when an Entity has a value changed with <code>:SetValue()</code>
@@ -8801,8 +9330,8 @@ function Trigger:Unsubscribe(event_name, callback) end
 ---@overload fun(event_name: "Destroy", callback: fun(self: Trigger)) @Triggered when an Entity is destroyed
 ---@overload fun(event_name: "DimensionChange", callback: fun(self: Trigger, old_dimension: integer, new_dimension: integer)) @Triggered when an Actor changes its dimension
 ---@overload fun(event_name: "EndOverlap", callback: fun(self: Trigger, entity: Actor)) @Triggered when something leaves this Trigger
----@overload fun(event_name: "EnterWater", callback: fun(self: Trigger)) @Triggered when an Actor enters a water body. Only Actors that simulate physics trigger this event, such as <code>Prop</code>, <code>Vehicle</code>, <code>Pickables</code> and <code>Character</code> only.
----@overload fun(event_name: "LeaveWater", callback: fun(self: Trigger)) @Triggered when an Actor leaves a water body. Only Actors that simulate physics trigger this event, such as <code>Prop</code>, <code>Vehicle</code>, <code>Pickables</code> and <code>Character</code> only.
+---@overload fun(event_name: "EnterWater", callback: fun(self: Trigger)) @Triggered when an Actor enters a water body.<br/><br/>Only Actors that simulate physics trigger this event, such as <code>Prop</code>, <code>Vehicle</code>, <code>Pickables</code> and <code>Character</code> only.
+---@overload fun(event_name: "LeaveWater", callback: fun(self: Trigger)) @Triggered when an Actor leaves a water body.<br/><br/>Only Actors that simulate physics trigger this event, such as <code>Prop</code>, <code>Vehicle</code>, <code>Pickables</code> and <code>Character</code> only.
 ---@overload fun(event_name: "NetworkAuthorityChange", callback: fun(self: Trigger, is_network_authority: boolean)) @Triggered when the local Player gets/loses network authority over this actor
 ---@overload fun(event_name: "Spawn", callback: fun(self: Trigger)) @Triggered when an Entity is spawned/created
 ---@overload fun(event_name: "ValueChange", callback: fun(self: Trigger, key: string, value: any)) @Triggered when an Entity has a value changed with <code>:SetValue()</code>
@@ -8830,7 +9359,7 @@ Vector = {}
 ---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/both.png" height="21"> <b>[Client/Server Side]</b>
 ---<a href="https://docs.nanos-world.com/docs/scripting-reference/structs/vector#function-cross">docs</a>
 ---
----Returns the cross product between this vector and another vector
+---Cross product of two vectors.<br/><br/>Returns the cross product between this vector and another vector
 ---@param other Vector @The vector to cross with
 ---@return Vector @the cross product vector
 function Vector:Cross(other) end
@@ -8838,7 +9367,7 @@ function Vector:Cross(other) end
 ---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/both.png" height="21"> <b>[Client/Server Side]</b>
 ---<a href="https://docs.nanos-world.com/docs/scripting-reference/structs/vector#function-distance">docs</a>
 ---
----Returns the distance of 2 vectors
+---Distance between two points.<br/><br/>Returns the distance of 2 vectors
 ---@param other Vector @The vector to get the distance to
 ---@return number @The distance between the vectors
 function Vector:Distance(other) end
@@ -8846,7 +9375,7 @@ function Vector:Distance(other) end
 ---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/both.png" height="21"> <b>[Client/Server Side]</b>
 ---<a href="https://docs.nanos-world.com/docs/scripting-reference/structs/vector#function-distancesquared">docs</a>
 ---
----Return the squared distance of 2 vectors
+---Squared distance between two points.<br/><br/>Return the squared distance of 2 vectors
 ---@param other Vector @The vector to get the squared distance to
 ---@return number @The squared distance between the vectors
 function Vector:DistanceSquared(other) end
@@ -8854,7 +9383,7 @@ function Vector:DistanceSquared(other) end
 ---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/both.png" height="21"> <b>[Client/Server Side]</b>
 ---<a href="https://docs.nanos-world.com/docs/scripting-reference/structs/vector#function-dot">docs</a>
 ---
----Returns the dot product between this vector and another vector
+---Dot product of two vectors.<br/><br/>Returns the dot product between this vector and another vector
 ---@param other Vector @The vector to dot with
 ---@return number @the dot product
 function Vector:Dot(other) end
@@ -8862,7 +9391,7 @@ function Vector:Dot(other) end
 ---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/both.png" height="21"> <b>[Client/Server Side]</b>
 ---<a href="https://docs.nanos-world.com/docs/scripting-reference/structs/vector#function-equals">docs</a>
 ---
----Check if the vector is equal to another vector, within specified error limits
+---Check against another vector for equality, within specified error limits.<br/><br/>Check if the vector is equal to another vector, within specified error limits
 ---@param other Vector @The vector to compare to
 ---@param tolerance? number @The error limits (Default: 0.000001)
 ---@return boolean @Are the vectors equal or not
@@ -8871,7 +9400,7 @@ function Vector:Equals(other, tolerance) end
 ---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/both.png" height="21"> <b>[Client/Server Side]</b>
 ---<a href="https://docs.nanos-world.com/docs/scripting-reference/structs/vector#function-getsafenormal">docs</a>
 ---
----Returns a normalized copy of the vector, checking it is safe to do so based on the length
+---Gets a normalized copy of the vector, checking it is safe to do so based on the length.<br/><br/>Returns a normalized copy of the vector, checking it is safe to do so based on the length
 ---@param tolerance? number @Minimum squared size to consider it non-zero (Default: 0.000001)
 ---@return Vector @The safe normal
 function Vector:GetSafeNormal(tolerance) end
@@ -8879,7 +9408,7 @@ function Vector:GetSafeNormal(tolerance) end
 ---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/both.png" height="21"> <b>[Client/Server Side]</b>
 ---<a href="https://docs.nanos-world.com/docs/scripting-reference/structs/vector#function-getunsafenormal">docs</a>
 ---
----Returns the normalized version of vector without checking for zero length
+---Calculates normalized version of vector without checking for zero length.<br/><br/>Returns the normalized version of vector without checking for zero length
 ---@return Vector @The unsafe normal
 function Vector:GetUnsafeNormal() end
 
@@ -8962,7 +9491,7 @@ Vector2D = {}
 ---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/both.png" height="21"> <b>[Client/Server Side]</b>
 ---<a href="https://docs.nanos-world.com/docs/scripting-reference/structs/vector2d#function-cross">docs</a>
 ---
----Returns the cross product between this vector and another vector, which for 2D vectors is a scalar value
+---Cross product of two vectors.<br/><br/>Returns the cross product between this vector and another vector, which for 2D vectors is a scalar value
 ---@param other Vector2D @The vector to cross with
 ---@return number @the cross product
 function Vector2D:Cross(other) end
@@ -8970,7 +9499,7 @@ function Vector2D:Cross(other) end
 ---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/both.png" height="21"> <b>[Client/Server Side]</b>
 ---<a href="https://docs.nanos-world.com/docs/scripting-reference/structs/vector2d#function-distance">docs</a>
 ---
----Returns the distance of 2 vectors
+---Distance between two points.<br/><br/>Returns the distance of 2 vectors
 ---@param other Vector2D @The vector to get the distance to
 ---@return number @The distance between the vectors
 function Vector2D:Distance(other) end
@@ -8978,7 +9507,7 @@ function Vector2D:Distance(other) end
 ---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/both.png" height="21"> <b>[Client/Server Side]</b>
 ---<a href="https://docs.nanos-world.com/docs/scripting-reference/structs/vector2d#function-distancesquared">docs</a>
 ---
----Return the squared distance of 2 vectors
+---Squared distance between two points.<br/><br/>Return the squared distance of 2 vectors
 ---@param other Vector2D @The vector to get the squared distance to
 ---@return number @The squared distance between the vectors
 function Vector2D:DistanceSquared(other) end
@@ -8986,7 +9515,7 @@ function Vector2D:DistanceSquared(other) end
 ---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/both.png" height="21"> <b>[Client/Server Side]</b>
 ---<a href="https://docs.nanos-world.com/docs/scripting-reference/structs/vector2d#function-dot">docs</a>
 ---
----Returns the dot product between this vector and another vector
+---Dot product of two vectors.<br/><br/>Returns the dot product between this vector and another vector
 ---@param other Vector2D @The vector to dot with
 ---@return number @the dot product
 function Vector2D:Dot(other) end
@@ -9003,7 +9532,7 @@ function Vector2D:IsNear(other, radius) end
 ---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/both.png" height="21"> <b>[Client/Server Side]</b>
 ---<a href="https://docs.nanos-world.com/docs/scripting-reference/structs/vector2d#function-lerp">docs</a>
 ---
----Returns the linear interpolation between this vector and another vector by the given alpha
+---Linearly interpolates between this vector and another vector.<br/><br/>Returns the linear interpolation between this vector and another vector by the given alpha
 ---@param other Vector2D @The vector to interpolate to
 ---@param alpha number @The interpolation alpha, where 0 returns this vector and 1 returns the other vector
 ---@return Vector2D @the interpolated vector
@@ -9045,9 +9574,23 @@ Vehicle = {}
 function Vehicle.Inherit(name, custom_values) end
 
 ---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/both.png" height="21"> <b>[Client/Server Side]</b>
+---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/base-classes/entity#static-function-getall">docs</a>
+---
+---Returns a table containing all Entities of the class this is called on
+---@return Vehicle[] @Copy of table containing all Entities
+function Vehicle.GetAll() end
+
+---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/both.png" height="21"> <b>[Client/Server Side]</b>
+---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/base-classes/entity#static-function-getpairs">docs</a>
+---
+---Returns an iterator with all Entities of this class to be used with <code>pairs()</code>.<br/><br/>This is a more performant method than <code>GetAll()</code>, as it will return the iterator to access the Entities directly instead of creating and returning a copy of the Entities table.<br><br><b>Note:</b> Destroying Entities from inside a <code>GetPairs()</code> loop will cause the iterable to change size during the process. If you want to loop-and-destroy, please use <code>GetAll()</code>.
+---@return EntityIterator<Vehicle> @Iterator with all Entities of this class
+function Vehicle.GetPairs() end
+
+---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/both.png" height="21"> <b>[Client/Server Side]</b>
 ---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/base-classes/vehicle#function-addskeletalmeshattached">docs</a>
 ---
----Spawns and attaches a SkeletalMesh to this entity, the SkeletalMesh must have the same skeleton used by this Actor's mesh, and will follow all animations from it. Uses a custom ID to be used for removing/customizing it afterwards
+---Attaches a Skeletal Mesh as master pose to this entity.<br/><br/>Spawns and attaches a SkeletalMesh to this entity, the SkeletalMesh must have the same skeleton used by this Actor's mesh, and will follow all animations from it. Uses a custom ID to be used for removing/customizing it afterwards
 ---@param id string @Used further for removing or applying material settings on it
 ---@param skeletal_mesh_path string @Path to SkeletalMesh asset to attach
 ---@param socket? string @Bone socket to attach to (Default: "")
@@ -9062,7 +9605,7 @@ function Vehicle:AddSkeletalMeshAttached(id, skeletal_mesh_path, socket, relativ
 ---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/both.png" height="21"> <b>[Client/Server Side]</b>
 ---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/base-classes/vehicle#function-addstaticmeshattached">docs</a>
 ---
----Spawns and attaches a StaticMesh to this Vehicle in a Socket with a relative location and rotation. Uses a custom ID to be used for removing/customizing it afterwards
+---Attaches a Static Mesh to this entity.<br/><br/>Spawns and attaches a StaticMesh to this Vehicle in a Socket with a relative location and rotation. Uses a custom ID to be used for removing/customizing it afterwards
 ---@param id string @Unique ID to assign to the StaticMesh
 ---@param static_mesh_path string @Path to StaticMesh asset to attach
 ---@param socket? string @Bone socket to attach to (Default: "")
@@ -9075,7 +9618,7 @@ function Vehicle:AddStaticMeshAttached(id, static_mesh_path, socket, relative_lo
 ---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/client-only.png" height="21"> <b>[Client Side]</b>
 ---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/base-classes/vehicle#function-bindanimationblueprinteventdispatcher">docs</a>
 ---
----Assigns and Binds an Animation Blueprint Event Dispatcher.<br><br><b>Note:</b> only <a href='/docs/scripting-reference/classes/vehiclewheeled'>VehicleWheeled</a> has an Animation Blueprint, on any other Vehicle type this does nothing.
+---Assigns and Binds an Animation Blueprint Event Dispatcher.<br/><br/><b>Note:</b> only <a href='/docs/scripting-reference/classes/vehiclewheeled'>VehicleWheeled</a> has an Animation Blueprint, on any other Vehicle type this does nothing.
 ---@param dispatcher_name string @Event Dispatcher name
 ---@param callback function @Callback function to call
 ---@return function @the callback itself
@@ -9084,7 +9627,7 @@ function Vehicle:BindAnimationBlueprintEventDispatcher(dispatcher_name, callback
 ---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/both.png" height="21"> <b>[Client/Server Side]</b>
 ---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/base-classes/vehicle#function-callanimationblueprintevent">docs</a>
 ---
----Calls an Animation Blueprint Event or Function<br/>Returns all Function return values on <strong>Client Side</strong><br><br><b>Note:</b> only <a href='/docs/scripting-reference/classes/vehiclewheeled'>VehicleWheeled</a> has an Animation Blueprint, on any other Vehicle type this does nothing.
+---Calls an Animation Blueprint Event or Function.<br/><br/>Returns all Function return values on <strong>Client Side</strong><br><br><b>Note:</b> only <a href='/docs/scripting-reference/classes/vehiclewheeled'>VehicleWheeled</a> has an Animation Blueprint, on any other Vehicle type this does nothing.
 ---@param event_name string @Event or Function name
 ---@param ...? any @Sequence of arguments to pass to the event (Default: nil)
 ---@return any... @the function return values
@@ -9107,7 +9650,7 @@ function Vehicle:GetAllStaticMeshAttached() end
 ---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/client-only.png" height="21"> <b>[Client Side]</b>
 ---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/base-classes/vehicle#function-getanimationblueprintpropertyvalue">docs</a>
 ---
----Gets an Animation Blueprint Property/Variable value directly.<br><br><b>Note:</b> only <a href='/docs/scripting-reference/classes/vehiclewheeled'>VehicleWheeled</a> has an Animation Blueprint, on any other Vehicle type this returns <code>nil</code>.
+---Gets an Animation Blueprint Property/Variable value directly.<br/><br/><b>Note:</b> only <a href='/docs/scripting-reference/classes/vehiclewheeled'>VehicleWheeled</a> has an Animation Blueprint, on any other Vehicle type this returns <code>nil</code>.
 ---@param property_name string @Name of the Animation Blueprint variable
 ---@return any @the property value
 function Vehicle:GetAnimationBlueprintPropertyValue(property_name) end
@@ -9205,7 +9748,7 @@ function Vehicle:RemoveStaticMeshAttached(id) end
 ---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/client-only.png" height="21"> <b>[Client Side]</b>
 ---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/base-classes/vehicle#function-setanimationblueprintpropertyvalue">docs</a>
 ---
----Sets an Animation Blueprint Property/Variable value directly on the Animation Blueprint passed in the constructor.<br><br><b>Note:</b> only <a href='/docs/scripting-reference/classes/vehiclewheeled'>VehicleWheeled</a> has an Animation Blueprint, on any other Vehicle type this does nothing.
+---Sets an Animation Blueprint Property/Variable value directly.<br/><br/>It is set on the Animation Blueprint passed in the constructor.<br/><br/><b>Note:</b> only <a href='/docs/scripting-reference/classes/vehiclewheeled'>VehicleWheeled</a> has an Animation Blueprint, on any other Vehicle type this does nothing.
 ---@param property_name string @Name of the Animation Blueprint variable
 ---@param value any @The value to set
 function Vehicle:SetAnimationBlueprintPropertyValue(property_name, value) end
@@ -9213,14 +9756,14 @@ function Vehicle:SetAnimationBlueprintPropertyValue(property_name, value) end
 ---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/authority-only.png" height="21"> <b>[Authority Side]</b>
 ---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/base-classes/vehicle#function-setbuoyancypontoons">docs</a>
 ---
----Sets the spherical Pontoons used to float this entity on Water, overriding the ones automatically calculated from the Mesh bounds and mass.<br/><br/>Pass no value (or an empty table) to go back to the automatically calculated ones.<br/><br/>Pontoons only have an effect on Maps with Water Buoyancy enabled
+---Sets the Buoyancy Pontoons used by the Water simulation.<br/><br/>Sets the spherical Pontoons used to float this entity on Water, overriding the ones automatically calculated from the Mesh bounds and mass.<br/><br/>Pass no value (or an empty table) to go back to the automatically calculated ones.<br/><br/>Pontoons only have an effect on Maps with Water Buoyancy enabled
 ---@param pontoons? { Offset: Vector, Radius: number } @Array with the Pontoons, or nil to restore the automatically calculated ones (Default: nil)
 function Vehicle:SetBuoyancyPontoons(pontoons) end
 
 ---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/authority-only.png" height="21"> <b>[Authority Side]</b>
 ---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/base-classes/vehicle#function-setbuoyancysettings">docs</a>
 ---
----Any value passed as nil restores that setting's default.<br/><br/>While the Pontoons are being automatically calculated, changing buoyancy_coefficient also recalculates them, as their radius derives from it.
+---Sets how this entity behaves on Water.<br/><br/>Any value passed as nil restores that setting's default.<br/><br/>While the Pontoons are being automatically calculated, changing buoyancy_coefficient also recalculates them, as their radius derives from it.
 ---@param enabled? boolean @Whether Buoyancy forces are applied at all (Default: true)
 ---@param buoyancy_coefficient? number @How much it floats, the higher the more (Default: 0.1)
 ---@param buoyancy_damp? number @First order damping on the vertical velocity, reduces bobbing (Default: 1000)
@@ -9230,7 +9773,7 @@ function Vehicle:SetBuoyancySettings(enabled, buoyancy_coefficient, buoyancy_dam
 ---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/authority-only.png" height="21"> <b>[Authority Side]</b>
 ---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/base-classes/vehicle#function-setcameraarmlength">docs</a>
 ---
----Sets how far the camera stays from this Vehicle while driving it, in centimeters.<br><br>This overrides the Player's own <a href='/docs/scripting-reference/classes/player#function-setcameraarmlength'>Camera Arm Length</a> for as long as they are driving it. Set it to <code>0</code> to use the Player's value instead, which is the default.
+---Sets how far the camera stays from this Vehicle while driving it.<br/><br/>The length is in centimeters. This overrides the Player's own <a href='/docs/scripting-reference/classes/player#function-setcameraarmlength'>Camera Arm Length</a> for as long as they are driving it. Set it to <code>0</code> to use the Player's value instead, which is the default.
 ---@param arm_length integer @The distance in centimeters, or 0 to use the Player's own value
 function Vehicle:SetCameraArmLength(arm_length) end
 
@@ -9244,7 +9787,7 @@ function Vehicle:SetCameraOffset(offset) end
 ---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/server-only.png" height="21"> <b>[Server Side]</b>
 ---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/base-classes/vehicle#function-setdoor">docs</a>
 ---
----Adds a Door at offset_location from root which will pose the Character at seat_location with seat_rotation rotation.
+---Adds a Door to the Vehicle.<br/><br/>Adds a Door at offset_location from root which will pose the Character at seat_location with seat_rotation rotation.
 ---@param seat_index integer @Index of the seat, 0 is the driver
 ---@param offset_location Vector @Location of the door trigger relative to the vehicle
 ---@param seat_location Vector @Location of the seat relative to the vehicle
@@ -9308,10 +9851,10 @@ function Vehicle:UnHideBone(bone_name) end
 ---@overload fun(event_name: "DimensionChange", callback: fun(self: Vehicle, old_dimension: integer, new_dimension: integer)): fun(self: Vehicle, old_dimension: integer, new_dimension: integer) @Triggered when an Actor changes its dimension
 ---@overload fun(event_name: "EngineStart", callback: fun(self: Vehicle)): fun(self: Vehicle) @Triggered when the engine starts
 ---@overload fun(event_name: "EngineStop", callback: fun(self: Vehicle)): fun(self: Vehicle) @Triggered when the engine stops
----@overload fun(event_name: "EnterWater", callback: fun(self: Vehicle)): fun(self: Vehicle) @Triggered when an Actor enters a water body. Only Actors that simulate physics trigger this event, such as <code>Prop</code>, <code>Vehicle</code>, <code>Pickables</code> and <code>Character</code> only.
+---@overload fun(event_name: "EnterWater", callback: fun(self: Vehicle)): fun(self: Vehicle) @Triggered when an Actor enters a water body.<br/><br/>Only Actors that simulate physics trigger this event, such as <code>Prop</code>, <code>Vehicle</code>, <code>Pickables</code> and <code>Character</code> only.
 ---@overload fun(event_name: "HealthChange", callback: fun(self: Vehicle, old_health: integer, new_health: integer)): fun(self: Vehicle, old_health: integer, new_health: integer) @When Entity has its Health changed, or because took damage or manually set through scripting or respawning
 ---@overload fun(event_name: "Hit", callback: fun(self: Vehicle, impact_force: number, normal_impulse: Vector, impact_location: Vector, velocity: Vector, other_actor?: Actor)): fun(self: Vehicle, impact_force: number, normal_impulse: Vector, impact_location: Vector, velocity: Vector, other_actor?: Actor) @Triggered when Vehicle hits something
----@overload fun(event_name: "LeaveWater", callback: fun(self: Vehicle)): fun(self: Vehicle) @Triggered when an Actor leaves a water body. Only Actors that simulate physics trigger this event, such as <code>Prop</code>, <code>Vehicle</code>, <code>Pickables</code> and <code>Character</code> only.
+---@overload fun(event_name: "LeaveWater", callback: fun(self: Vehicle)): fun(self: Vehicle) @Triggered when an Actor leaves a water body.<br/><br/>Only Actors that simulate physics trigger this event, such as <code>Prop</code>, <code>Vehicle</code>, <code>Pickables</code> and <code>Character</code> only.
 ---@overload fun(event_name: "NetworkAuthorityChange", callback: fun(self: Vehicle, is_network_authority: boolean)): fun(self: Vehicle, is_network_authority: boolean) @Triggered when the local Player gets/loses network authority over this actor
 ---@overload fun(event_name: "Respawn", callback: fun(self: Vehicle)): fun(self: Vehicle) @When Entity Respawns
 ---@overload fun(event_name: "Spawn", callback: fun(self: Vehicle)): fun(self: Vehicle) @Triggered when an Entity is spawned/created
@@ -9334,10 +9877,10 @@ function Vehicle.Subscribe(event_name, callback) end
 ---@overload fun(self: Vehicle, event_name: "DimensionChange", callback: fun(self: Vehicle, old_dimension: integer, new_dimension: integer)): fun(self: Vehicle, old_dimension: integer, new_dimension: integer) @Triggered when an Actor changes its dimension
 ---@overload fun(self: Vehicle, event_name: "EngineStart", callback: fun(self: Vehicle)): fun(self: Vehicle) @Triggered when the engine starts
 ---@overload fun(self: Vehicle, event_name: "EngineStop", callback: fun(self: Vehicle)): fun(self: Vehicle) @Triggered when the engine stops
----@overload fun(self: Vehicle, event_name: "EnterWater", callback: fun(self: Vehicle)): fun(self: Vehicle) @Triggered when an Actor enters a water body. Only Actors that simulate physics trigger this event, such as <code>Prop</code>, <code>Vehicle</code>, <code>Pickables</code> and <code>Character</code> only.
+---@overload fun(self: Vehicle, event_name: "EnterWater", callback: fun(self: Vehicle)): fun(self: Vehicle) @Triggered when an Actor enters a water body.<br/><br/>Only Actors that simulate physics trigger this event, such as <code>Prop</code>, <code>Vehicle</code>, <code>Pickables</code> and <code>Character</code> only.
 ---@overload fun(self: Vehicle, event_name: "HealthChange", callback: fun(self: Vehicle, old_health: integer, new_health: integer)): fun(self: Vehicle, old_health: integer, new_health: integer) @When Entity has its Health changed, or because took damage or manually set through scripting or respawning
 ---@overload fun(self: Vehicle, event_name: "Hit", callback: fun(self: Vehicle, impact_force: number, normal_impulse: Vector, impact_location: Vector, velocity: Vector, other_actor?: Actor)): fun(self: Vehicle, impact_force: number, normal_impulse: Vector, impact_location: Vector, velocity: Vector, other_actor?: Actor) @Triggered when Vehicle hits something
----@overload fun(self: Vehicle, event_name: "LeaveWater", callback: fun(self: Vehicle)): fun(self: Vehicle) @Triggered when an Actor leaves a water body. Only Actors that simulate physics trigger this event, such as <code>Prop</code>, <code>Vehicle</code>, <code>Pickables</code> and <code>Character</code> only.
+---@overload fun(self: Vehicle, event_name: "LeaveWater", callback: fun(self: Vehicle)): fun(self: Vehicle) @Triggered when an Actor leaves a water body.<br/><br/>Only Actors that simulate physics trigger this event, such as <code>Prop</code>, <code>Vehicle</code>, <code>Pickables</code> and <code>Character</code> only.
 ---@overload fun(self: Vehicle, event_name: "NetworkAuthorityChange", callback: fun(self: Vehicle, is_network_authority: boolean)): fun(self: Vehicle, is_network_authority: boolean) @Triggered when the local Player gets/loses network authority over this actor
 ---@overload fun(self: Vehicle, event_name: "Respawn", callback: fun(self: Vehicle)): fun(self: Vehicle) @When Entity Respawns
 ---@overload fun(self: Vehicle, event_name: "Spawn", callback: fun(self: Vehicle)): fun(self: Vehicle) @Triggered when an Entity is spawned/created
@@ -9358,10 +9901,10 @@ function Vehicle:Subscribe(event_name, callback) end
 ---@overload fun(self: Vehicle, event_name: "DimensionChange", callback: fun(self: Vehicle, old_dimension: integer, new_dimension: integer)) @Triggered when an Actor changes its dimension
 ---@overload fun(self: Vehicle, event_name: "EngineStart", callback: fun(self: Vehicle)) @Triggered when the engine starts
 ---@overload fun(self: Vehicle, event_name: "EngineStop", callback: fun(self: Vehicle)) @Triggered when the engine stops
----@overload fun(self: Vehicle, event_name: "EnterWater", callback: fun(self: Vehicle)) @Triggered when an Actor enters a water body. Only Actors that simulate physics trigger this event, such as <code>Prop</code>, <code>Vehicle</code>, <code>Pickables</code> and <code>Character</code> only.
+---@overload fun(self: Vehicle, event_name: "EnterWater", callback: fun(self: Vehicle)) @Triggered when an Actor enters a water body.<br/><br/>Only Actors that simulate physics trigger this event, such as <code>Prop</code>, <code>Vehicle</code>, <code>Pickables</code> and <code>Character</code> only.
 ---@overload fun(self: Vehicle, event_name: "HealthChange", callback: fun(self: Vehicle, old_health: integer, new_health: integer)) @When Entity has its Health changed, or because took damage or manually set through scripting or respawning
 ---@overload fun(self: Vehicle, event_name: "Hit", callback: fun(self: Vehicle, impact_force: number, normal_impulse: Vector, impact_location: Vector, velocity: Vector, other_actor?: Actor)) @Triggered when Vehicle hits something
----@overload fun(self: Vehicle, event_name: "LeaveWater", callback: fun(self: Vehicle)) @Triggered when an Actor leaves a water body. Only Actors that simulate physics trigger this event, such as <code>Prop</code>, <code>Vehicle</code>, <code>Pickables</code> and <code>Character</code> only.
+---@overload fun(self: Vehicle, event_name: "LeaveWater", callback: fun(self: Vehicle)) @Triggered when an Actor leaves a water body.<br/><br/>Only Actors that simulate physics trigger this event, such as <code>Prop</code>, <code>Vehicle</code>, <code>Pickables</code> and <code>Character</code> only.
 ---@overload fun(self: Vehicle, event_name: "NetworkAuthorityChange", callback: fun(self: Vehicle, is_network_authority: boolean)) @Triggered when the local Player gets/loses network authority over this actor
 ---@overload fun(self: Vehicle, event_name: "Respawn", callback: fun(self: Vehicle)) @When Entity Respawns
 ---@overload fun(self: Vehicle, event_name: "Spawn", callback: fun(self: Vehicle)) @Triggered when an Entity is spawned/created
@@ -9383,10 +9926,10 @@ function Vehicle:Unsubscribe(event_name, callback) end
 ---@overload fun(event_name: "DimensionChange", callback: fun(self: Vehicle, old_dimension: integer, new_dimension: integer)) @Triggered when an Actor changes its dimension
 ---@overload fun(event_name: "EngineStart", callback: fun(self: Vehicle)) @Triggered when the engine starts
 ---@overload fun(event_name: "EngineStop", callback: fun(self: Vehicle)) @Triggered when the engine stops
----@overload fun(event_name: "EnterWater", callback: fun(self: Vehicle)) @Triggered when an Actor enters a water body. Only Actors that simulate physics trigger this event, such as <code>Prop</code>, <code>Vehicle</code>, <code>Pickables</code> and <code>Character</code> only.
+---@overload fun(event_name: "EnterWater", callback: fun(self: Vehicle)) @Triggered when an Actor enters a water body.<br/><br/>Only Actors that simulate physics trigger this event, such as <code>Prop</code>, <code>Vehicle</code>, <code>Pickables</code> and <code>Character</code> only.
 ---@overload fun(event_name: "HealthChange", callback: fun(self: Vehicle, old_health: integer, new_health: integer)) @When Entity has its Health changed, or because took damage or manually set through scripting or respawning
 ---@overload fun(event_name: "Hit", callback: fun(self: Vehicle, impact_force: number, normal_impulse: Vector, impact_location: Vector, velocity: Vector, other_actor?: Actor)) @Triggered when Vehicle hits something
----@overload fun(event_name: "LeaveWater", callback: fun(self: Vehicle)) @Triggered when an Actor leaves a water body. Only Actors that simulate physics trigger this event, such as <code>Prop</code>, <code>Vehicle</code>, <code>Pickables</code> and <code>Character</code> only.
+---@overload fun(event_name: "LeaveWater", callback: fun(self: Vehicle)) @Triggered when an Actor leaves a water body.<br/><br/>Only Actors that simulate physics trigger this event, such as <code>Prop</code>, <code>Vehicle</code>, <code>Pickables</code> and <code>Character</code> only.
 ---@overload fun(event_name: "NetworkAuthorityChange", callback: fun(self: Vehicle, is_network_authority: boolean)) @Triggered when the local Player gets/loses network authority over this actor
 ---@overload fun(event_name: "Respawn", callback: fun(self: Vehicle)) @When Entity Respawns
 ---@overload fun(event_name: "Spawn", callback: fun(self: Vehicle)) @Triggered when an Entity is spawned/created
@@ -9430,18 +9973,32 @@ function VehicleWater:Constructor(location, rotation, asset, collision_type, gra
 ---@return VehicleWater.Inherited @The new Class table, inheriting from VehicleWater
 function VehicleWater.Inherit(name, custom_values) end
 
+---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/both.png" height="21"> <b>[Client/Server Side]</b>
+---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/base-classes/entity#static-function-getall">docs</a>
+---
+---Returns a table containing all Entities of the class this is called on
+---@return VehicleWater[] @Copy of table containing all Entities
+function VehicleWater.GetAll() end
+
+---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/both.png" height="21"> <b>[Client/Server Side]</b>
+---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/base-classes/entity#static-function-getpairs">docs</a>
+---
+---Returns an iterator with all Entities of this class to be used with <code>pairs()</code>.<br/><br/>This is a more performant method than <code>GetAll()</code>, as it will return the iterator to access the Entities directly instead of creating and returning a copy of the Entities table.<br><br><b>Note:</b> Destroying Entities from inside a <code>GetPairs()</code> loop will cause the iterable to change size during the process. If you want to loop-and-destroy, please use <code>GetAll()</code>.
+---@return EntityIterator<VehicleWater> @Iterator with all Entities of this class
+function VehicleWater.GetPairs() end
+
 ---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/server-only.png" height="21"> <b>[Server Side]</b>
 ---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/vehiclewater#function-setengineoffset">docs</a>
 ---
----Sets the relative location of the Engine (where the Physics Thruster, sounds and effects are attached). Default is Vector(-200, 0, 0)
+---Sets the relative location of the Engine (where the Physics Thruster, sounds and effects are attached).<br/><br/>Default is Vector(-200, 0, 0)
 ---@param offset Vector @The new relative location of the Engine
 function VehicleWater:SetEngineOffset(offset) end
 
 ---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/server-only.png" height="21"> <b>[Server Side]</b>
 ---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/vehiclewater#function-setthruststrength">docs</a>
 ---
----Sets the force of the Engine/Thruster. Default is 1000
----@param force integer @The new force of the Engine/Thruster
+---Sets the force of the Engine/Thruster.<br/><br/>The force is in Newtons. Default is 3000, up to 65535.<br/><br/>Scale it with the boat's mass: the default suits a ~400 kg boat
+---@param force integer @The new force of the Engine/Thruster, in Newtons
 function VehicleWater:SetThrustStrength(force) end
 
 ---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/server-only.png" height="21"> <b>[Server Side]</b>
@@ -9486,6 +10043,20 @@ function VehicleWheeled:Constructor(location, rotation, asset, collision_type, g
 ---@param custom_values? table @An optional table with custom values to be set in the inherited class table (Default: {})
 ---@return VehicleWheeled.Inherited @The new Class table, inheriting from VehicleWheeled
 function VehicleWheeled.Inherit(name, custom_values) end
+
+---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/both.png" height="21"> <b>[Client/Server Side]</b>
+---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/base-classes/entity#static-function-getall">docs</a>
+---
+---Returns a table containing all Entities of the class this is called on
+---@return VehicleWheeled[] @Copy of table containing all Entities
+function VehicleWheeled.GetAll() end
+
+---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/both.png" height="21"> <b>[Client/Server Side]</b>
+---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/base-classes/entity#static-function-getpairs">docs</a>
+---
+---Returns an iterator with all Entities of this class to be used with <code>pairs()</code>.<br/><br/>This is a more performant method than <code>GetAll()</code>, as it will return the iterator to access the Entities directly instead of creating and returning a copy of the Entities table.<br><br><b>Note:</b> Destroying Entities from inside a <code>GetPairs()</code> loop will cause the iterable to change size during the process. If you want to loop-and-destroy, please use <code>GetAll()</code>.
+---@return EntityIterator<VehicleWheeled> @Iterator with all Entities of this class
+function VehicleWheeled.GetPairs() end
 
 ---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/client-only.png" height="21"> <b>[Client Side]</b>
 ---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/vehiclewheeled#function-getgear">docs</a>
@@ -9564,7 +10135,7 @@ function VehicleWheeled:SetEngineSetup(max_torque, max_rpm, idle_rpm, brake_effe
 ---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/server-only.png" height="21"> <b>[Server Side]</b>
 ---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/vehiclewheeled#function-setenginestarted">docs</a>
 ---
----Sets if the Engine is turned off/on (this will affect Lights, Sounds and ability to Throttle)
+---Sets if the Engine is turned off/on.<br/><br/>This affects the Lights, the Sounds and the ability to Throttle
 ---@param started boolean @Whether the Engine is turned off/on
 function VehicleWheeled:SetEngineStarted(started) end
 
@@ -9587,7 +10158,7 @@ function VehicleWheeled:SetHeadlightsSetup(location, color) end
 ---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/vehiclewheeled#function-sethornsound">docs</a>
 ---
 ---Sets the sound asset used by the vehicle horn
----@param sound_asset string @The new sound asset used by the vehicle horn
+---@param sound_asset? string @The new sound asset used by the vehicle horn, pass nil or an empty string for no sound (Default: nil)
 function VehicleWheeled:SetHornSound(sound_asset) end
 
 ---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/server-only.png" height="21"> <b>[Server Side]</b>
@@ -9607,7 +10178,7 @@ function VehicleWheeled:SetSteeringSetup(steering_type, angle_ratio, steering_cu
 ---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/server-only.png" height="21"> <b>[Server Side]</b>
 ---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/vehiclewheeled#function-setsteeringwheelsetup">docs</a>
 ---
----Configures where the Steering Wheel is located, so Characters can grab it procedurally properly
+---Configures where the Steering Wheel is located.<br/><br/>Characters use it to grab the Steering Wheel procedurally
 ---@param relative_location Vector @Relative location of the steering wheel from the vehicle's origin
 ---@param radius integer @Radius of the steering wheel to align the hands properly
 ---@param rotation? Rotator @Rotation of the steering wheel to align the hands properly (Default: Rotator(0, 0, 0))
@@ -9656,7 +10227,7 @@ function VehicleWheeled:SetTransmissionSetup(transmission_final_ratio, transmiss
 ---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/server-only.png" height="21"> <b>[Server Side]</b>
 ---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/vehiclewheeled#function-setwheel">docs</a>
 ---
----Wheels can be updated in runtime by calling SetWheel again, you can for example change the suspension high or disable a wheel totally by toggling affected_by_engine off or setting radius to 0.
+---Configures a Vehicle Wheel.<br/><br/>Wheels can be updated in runtime by calling SetWheel again, you can for example change the suspension high or disable a wheel totally by toggling affected_by_engine off or setting radius to 0.
 ---@param index integer @Index of the wheel (0-N). Set it in ASC order
 ---@param bone_name string @Name of the bone to attach this wheel to
 ---@param radius? integer @Radius of the wheel (Default: 32)
@@ -9702,15 +10273,16 @@ function VehicleWheeled:SetWheel(index, bone_name, radius, width, max_steer_angl
 ---@overload fun(event_name: "DimensionChange", callback: fun(self: VehicleWheeled, old_dimension: integer, new_dimension: integer)): fun(self: VehicleWheeled, old_dimension: integer, new_dimension: integer) @Triggered when an Actor changes its dimension
 ---@overload fun(event_name: "EngineStart", callback: fun(self: VehicleWheeled)): fun(self: VehicleWheeled) @Triggered when the engine starts
 ---@overload fun(event_name: "EngineStop", callback: fun(self: VehicleWheeled)): fun(self: VehicleWheeled) @Triggered when the engine stops
----@overload fun(event_name: "EnterWater", callback: fun(self: VehicleWheeled)): fun(self: VehicleWheeled) @Triggered when an Actor enters a water body. Only Actors that simulate physics trigger this event, such as <code>Prop</code>, <code>Vehicle</code>, <code>Pickables</code> and <code>Character</code> only.
+---@overload fun(event_name: "EnterWater", callback: fun(self: VehicleWheeled)): fun(self: VehicleWheeled) @Triggered when an Actor enters a water body.<br/><br/>Only Actors that simulate physics trigger this event, such as <code>Prop</code>, <code>Vehicle</code>, <code>Pickables</code> and <code>Character</code> only.
 ---@overload fun(event_name: "HealthChange", callback: fun(self: VehicleWheeled, old_health: integer, new_health: integer)): fun(self: VehicleWheeled, old_health: integer, new_health: integer) @When Entity has its Health changed, or because took damage or manually set through scripting or respawning
 ---@overload fun(event_name: "Hit", callback: fun(self: VehicleWheeled, impact_force: number, normal_impulse: Vector, impact_location: Vector, velocity: Vector, other_actor?: Actor)): fun(self: VehicleWheeled, impact_force: number, normal_impulse: Vector, impact_location: Vector, velocity: Vector, other_actor?: Actor) @Triggered when Vehicle hits something
 ---@overload fun(event_name: "Horn", callback: fun(self: VehicleWheeled, is_honking: boolean)): fun(self: VehicleWheeled, is_honking: boolean) @Triggered when Vehicle honks
----@overload fun(event_name: "LeaveWater", callback: fun(self: VehicleWheeled)): fun(self: VehicleWheeled) @Triggered when an Actor leaves a water body. Only Actors that simulate physics trigger this event, such as <code>Prop</code>, <code>Vehicle</code>, <code>Pickables</code> and <code>Character</code> only.
+---@overload fun(event_name: "LeaveWater", callback: fun(self: VehicleWheeled)): fun(self: VehicleWheeled) @Triggered when an Actor leaves a water body.<br/><br/>Only Actors that simulate physics trigger this event, such as <code>Prop</code>, <code>Vehicle</code>, <code>Pickables</code> and <code>Character</code> only.
 ---@overload fun(event_name: "NetworkAuthorityChange", callback: fun(self: VehicleWheeled, is_network_authority: boolean)): fun(self: VehicleWheeled, is_network_authority: boolean) @Triggered when the local Player gets/loses network authority over this actor
 ---@overload fun(event_name: "Respawn", callback: fun(self: VehicleWheeled)): fun(self: VehicleWheeled) @When Entity Respawns
 ---@overload fun(event_name: "Spawn", callback: fun(self: VehicleWheeled)): fun(self: VehicleWheeled) @Triggered when an Entity is spawned/created
 ---@overload fun(event_name: "TakeDamage", callback: fun(self: VehicleWheeled, damage: integer, bone: string, type: DamageType, from_direction: Vector, instigator: Player, causer: any): number?): fun(self: VehicleWheeled, damage: integer, bone: string, type: DamageType, from_direction: Vector, instigator: Player, causer: any): number? @Triggered when this Entity takes damage
+---@overload fun(event_name: "TireFlat", callback: fun(self: VehicleWheeled, wheel_index: integer, is_flat: boolean)): fun(self: VehicleWheeled, wheel_index: integer, is_flat: boolean) @Triggered when a Tire goes flat or is restored.<br/><br/>Fires when the flat state of a tire actually changes, by damage or by <code>SetTireFlat</code>. Note that "Respawn" event restores all tires
 ---@overload fun(event_name: "ValueChange", callback: fun(self: VehicleWheeled, key: string, value: any)): fun(self: VehicleWheeled, key: string, value: any) @Triggered when an Entity has a value changed with <code>:SetValue()</code>
 function VehicleWheeled.Subscribe(event_name, callback) end
 
@@ -9729,15 +10301,16 @@ function VehicleWheeled.Subscribe(event_name, callback) end
 ---@overload fun(self: VehicleWheeled, event_name: "DimensionChange", callback: fun(self: VehicleWheeled, old_dimension: integer, new_dimension: integer)): fun(self: VehicleWheeled, old_dimension: integer, new_dimension: integer) @Triggered when an Actor changes its dimension
 ---@overload fun(self: VehicleWheeled, event_name: "EngineStart", callback: fun(self: VehicleWheeled)): fun(self: VehicleWheeled) @Triggered when the engine starts
 ---@overload fun(self: VehicleWheeled, event_name: "EngineStop", callback: fun(self: VehicleWheeled)): fun(self: VehicleWheeled) @Triggered when the engine stops
----@overload fun(self: VehicleWheeled, event_name: "EnterWater", callback: fun(self: VehicleWheeled)): fun(self: VehicleWheeled) @Triggered when an Actor enters a water body. Only Actors that simulate physics trigger this event, such as <code>Prop</code>, <code>Vehicle</code>, <code>Pickables</code> and <code>Character</code> only.
+---@overload fun(self: VehicleWheeled, event_name: "EnterWater", callback: fun(self: VehicleWheeled)): fun(self: VehicleWheeled) @Triggered when an Actor enters a water body.<br/><br/>Only Actors that simulate physics trigger this event, such as <code>Prop</code>, <code>Vehicle</code>, <code>Pickables</code> and <code>Character</code> only.
 ---@overload fun(self: VehicleWheeled, event_name: "HealthChange", callback: fun(self: VehicleWheeled, old_health: integer, new_health: integer)): fun(self: VehicleWheeled, old_health: integer, new_health: integer) @When Entity has its Health changed, or because took damage or manually set through scripting or respawning
 ---@overload fun(self: VehicleWheeled, event_name: "Hit", callback: fun(self: VehicleWheeled, impact_force: number, normal_impulse: Vector, impact_location: Vector, velocity: Vector, other_actor?: Actor)): fun(self: VehicleWheeled, impact_force: number, normal_impulse: Vector, impact_location: Vector, velocity: Vector, other_actor?: Actor) @Triggered when Vehicle hits something
 ---@overload fun(self: VehicleWheeled, event_name: "Horn", callback: fun(self: VehicleWheeled, is_honking: boolean)): fun(self: VehicleWheeled, is_honking: boolean) @Triggered when Vehicle honks
----@overload fun(self: VehicleWheeled, event_name: "LeaveWater", callback: fun(self: VehicleWheeled)): fun(self: VehicleWheeled) @Triggered when an Actor leaves a water body. Only Actors that simulate physics trigger this event, such as <code>Prop</code>, <code>Vehicle</code>, <code>Pickables</code> and <code>Character</code> only.
+---@overload fun(self: VehicleWheeled, event_name: "LeaveWater", callback: fun(self: VehicleWheeled)): fun(self: VehicleWheeled) @Triggered when an Actor leaves a water body.<br/><br/>Only Actors that simulate physics trigger this event, such as <code>Prop</code>, <code>Vehicle</code>, <code>Pickables</code> and <code>Character</code> only.
 ---@overload fun(self: VehicleWheeled, event_name: "NetworkAuthorityChange", callback: fun(self: VehicleWheeled, is_network_authority: boolean)): fun(self: VehicleWheeled, is_network_authority: boolean) @Triggered when the local Player gets/loses network authority over this actor
 ---@overload fun(self: VehicleWheeled, event_name: "Respawn", callback: fun(self: VehicleWheeled)): fun(self: VehicleWheeled) @When Entity Respawns
 ---@overload fun(self: VehicleWheeled, event_name: "Spawn", callback: fun(self: VehicleWheeled)): fun(self: VehicleWheeled) @Triggered when an Entity is spawned/created
 ---@overload fun(self: VehicleWheeled, event_name: "TakeDamage", callback: fun(self: VehicleWheeled, damage: integer, bone: string, type: DamageType, from_direction: Vector, instigator: Player, causer: any): number?): fun(self: VehicleWheeled, damage: integer, bone: string, type: DamageType, from_direction: Vector, instigator: Player, causer: any): number? @Triggered when this Entity takes damage
+---@overload fun(self: VehicleWheeled, event_name: "TireFlat", callback: fun(self: VehicleWheeled, wheel_index: integer, is_flat: boolean)): fun(self: VehicleWheeled, wheel_index: integer, is_flat: boolean) @Triggered when a Tire goes flat or is restored.<br/><br/>Fires when the flat state of a tire actually changes, by damage or by <code>SetTireFlat</code>. Note that "Respawn" event restores all tires
 ---@overload fun(self: VehicleWheeled, event_name: "ValueChange", callback: fun(self: VehicleWheeled, key: string, value: any)): fun(self: VehicleWheeled, key: string, value: any) @Triggered when an Entity has a value changed with <code>:SetValue()</code>
 function VehicleWheeled:Subscribe(event_name, callback) end
 
@@ -9754,15 +10327,16 @@ function VehicleWheeled:Subscribe(event_name, callback) end
 ---@overload fun(self: VehicleWheeled, event_name: "DimensionChange", callback: fun(self: VehicleWheeled, old_dimension: integer, new_dimension: integer)) @Triggered when an Actor changes its dimension
 ---@overload fun(self: VehicleWheeled, event_name: "EngineStart", callback: fun(self: VehicleWheeled)) @Triggered when the engine starts
 ---@overload fun(self: VehicleWheeled, event_name: "EngineStop", callback: fun(self: VehicleWheeled)) @Triggered when the engine stops
----@overload fun(self: VehicleWheeled, event_name: "EnterWater", callback: fun(self: VehicleWheeled)) @Triggered when an Actor enters a water body. Only Actors that simulate physics trigger this event, such as <code>Prop</code>, <code>Vehicle</code>, <code>Pickables</code> and <code>Character</code> only.
+---@overload fun(self: VehicleWheeled, event_name: "EnterWater", callback: fun(self: VehicleWheeled)) @Triggered when an Actor enters a water body.<br/><br/>Only Actors that simulate physics trigger this event, such as <code>Prop</code>, <code>Vehicle</code>, <code>Pickables</code> and <code>Character</code> only.
 ---@overload fun(self: VehicleWheeled, event_name: "HealthChange", callback: fun(self: VehicleWheeled, old_health: integer, new_health: integer)) @When Entity has its Health changed, or because took damage or manually set through scripting or respawning
 ---@overload fun(self: VehicleWheeled, event_name: "Hit", callback: fun(self: VehicleWheeled, impact_force: number, normal_impulse: Vector, impact_location: Vector, velocity: Vector, other_actor?: Actor)) @Triggered when Vehicle hits something
 ---@overload fun(self: VehicleWheeled, event_name: "Horn", callback: fun(self: VehicleWheeled, is_honking: boolean)) @Triggered when Vehicle honks
----@overload fun(self: VehicleWheeled, event_name: "LeaveWater", callback: fun(self: VehicleWheeled)) @Triggered when an Actor leaves a water body. Only Actors that simulate physics trigger this event, such as <code>Prop</code>, <code>Vehicle</code>, <code>Pickables</code> and <code>Character</code> only.
+---@overload fun(self: VehicleWheeled, event_name: "LeaveWater", callback: fun(self: VehicleWheeled)) @Triggered when an Actor leaves a water body.<br/><br/>Only Actors that simulate physics trigger this event, such as <code>Prop</code>, <code>Vehicle</code>, <code>Pickables</code> and <code>Character</code> only.
 ---@overload fun(self: VehicleWheeled, event_name: "NetworkAuthorityChange", callback: fun(self: VehicleWheeled, is_network_authority: boolean)) @Triggered when the local Player gets/loses network authority over this actor
 ---@overload fun(self: VehicleWheeled, event_name: "Respawn", callback: fun(self: VehicleWheeled)) @When Entity Respawns
 ---@overload fun(self: VehicleWheeled, event_name: "Spawn", callback: fun(self: VehicleWheeled)) @Triggered when an Entity is spawned/created
 ---@overload fun(self: VehicleWheeled, event_name: "TakeDamage", callback: fun(self: VehicleWheeled, damage: integer, bone: string, type: DamageType, from_direction: Vector, instigator: Player, causer: any): number?) @Triggered when this Entity takes damage
+---@overload fun(self: VehicleWheeled, event_name: "TireFlat", callback: fun(self: VehicleWheeled, wheel_index: integer, is_flat: boolean)) @Triggered when a Tire goes flat or is restored.<br/><br/>Fires when the flat state of a tire actually changes, by damage or by <code>SetTireFlat</code>. Note that "Respawn" event restores all tires
 ---@overload fun(self: VehicleWheeled, event_name: "ValueChange", callback: fun(self: VehicleWheeled, key: string, value: any)) @Triggered when an Entity has a value changed with <code>:SetValue()</code>
 function VehicleWheeled:Unsubscribe(event_name, callback) end
 
@@ -9780,15 +10354,16 @@ function VehicleWheeled:Unsubscribe(event_name, callback) end
 ---@overload fun(event_name: "DimensionChange", callback: fun(self: VehicleWheeled, old_dimension: integer, new_dimension: integer)) @Triggered when an Actor changes its dimension
 ---@overload fun(event_name: "EngineStart", callback: fun(self: VehicleWheeled)) @Triggered when the engine starts
 ---@overload fun(event_name: "EngineStop", callback: fun(self: VehicleWheeled)) @Triggered when the engine stops
----@overload fun(event_name: "EnterWater", callback: fun(self: VehicleWheeled)) @Triggered when an Actor enters a water body. Only Actors that simulate physics trigger this event, such as <code>Prop</code>, <code>Vehicle</code>, <code>Pickables</code> and <code>Character</code> only.
+---@overload fun(event_name: "EnterWater", callback: fun(self: VehicleWheeled)) @Triggered when an Actor enters a water body.<br/><br/>Only Actors that simulate physics trigger this event, such as <code>Prop</code>, <code>Vehicle</code>, <code>Pickables</code> and <code>Character</code> only.
 ---@overload fun(event_name: "HealthChange", callback: fun(self: VehicleWheeled, old_health: integer, new_health: integer)) @When Entity has its Health changed, or because took damage or manually set through scripting or respawning
 ---@overload fun(event_name: "Hit", callback: fun(self: VehicleWheeled, impact_force: number, normal_impulse: Vector, impact_location: Vector, velocity: Vector, other_actor?: Actor)) @Triggered when Vehicle hits something
 ---@overload fun(event_name: "Horn", callback: fun(self: VehicleWheeled, is_honking: boolean)) @Triggered when Vehicle honks
----@overload fun(event_name: "LeaveWater", callback: fun(self: VehicleWheeled)) @Triggered when an Actor leaves a water body. Only Actors that simulate physics trigger this event, such as <code>Prop</code>, <code>Vehicle</code>, <code>Pickables</code> and <code>Character</code> only.
+---@overload fun(event_name: "LeaveWater", callback: fun(self: VehicleWheeled)) @Triggered when an Actor leaves a water body.<br/><br/>Only Actors that simulate physics trigger this event, such as <code>Prop</code>, <code>Vehicle</code>, <code>Pickables</code> and <code>Character</code> only.
 ---@overload fun(event_name: "NetworkAuthorityChange", callback: fun(self: VehicleWheeled, is_network_authority: boolean)) @Triggered when the local Player gets/loses network authority over this actor
 ---@overload fun(event_name: "Respawn", callback: fun(self: VehicleWheeled)) @When Entity Respawns
 ---@overload fun(event_name: "Spawn", callback: fun(self: VehicleWheeled)) @Triggered when an Entity is spawned/created
 ---@overload fun(event_name: "TakeDamage", callback: fun(self: VehicleWheeled, damage: integer, bone: string, type: DamageType, from_direction: Vector, instigator: Player, causer: any): number?) @Triggered when this Entity takes damage
+---@overload fun(event_name: "TireFlat", callback: fun(self: VehicleWheeled, wheel_index: integer, is_flat: boolean)) @Triggered when a Tire goes flat or is restored.<br/><br/>Fires when the flat state of a tire actually changes, by damage or by <code>SetTireFlat</code>. Note that "Respawn" event restores all tires
 ---@overload fun(event_name: "ValueChange", callback: fun(self: VehicleWheeled, key: string, value: any)) @Triggered when an Entity has a value changed with <code>:SetValue()</code>
 function VehicleWheeled.Unsubscribe(event_name, callback) end
 
@@ -9847,7 +10422,7 @@ function Viewport.SetBloodScreenEnabled(is_enabled) end
 ---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/client-only.png" height="21"> <b>[Client Side]</b>
 ---<a href="https://docs.nanos-world.com/docs/scripting-reference/static-classes/viewport#static-function-setbloodscreenintensity">docs</a>
 ---
----If you don't want the Blood Screen to be overridden by the default damage effect, disable it first with <code>Viewport.SetBloodScreenEnabled(false)</code>
+---Manually sets the Blood Screen intensity.<br/><br/>If you don't want the Blood Screen to be overridden by the default damage effect, disable it first with <code>Viewport.SetBloodScreenEnabled(false)</code>
 ---@param intensity number @From 0.0 to 1.0
 function Viewport.SetBloodScreenIntensity(intensity) end
 
@@ -9870,7 +10445,7 @@ function Viewport.SetCrosshairEnabled(is_enabled) end
 ---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/client-only.png" height="21"> <b>[Client Side]</b>
 ---<a href="https://docs.nanos-world.com/docs/scripting-reference/static-classes/viewport#static-function-sethardwarecursor">docs</a>
 ---
----Loads and sets a hardware cursor in the game from a PNG image<br/>Note: due an engine limitation modifying an already set cursor image will not change the cursor until the game is restarted
+---Loads and sets a hardware cursor in the game from a PNG image.<br/><br/>Note: due an engine limitation modifying an already set cursor image will not change the cursor until the game is restarted
 ---@param cursor_shape CursorType @Which cursor shape to replace
 ---@param cursor_path string @a PNG image relative to Assets/
 ---@param hotspot? Vector2D @Click point of the cursor image, in pixels (Default: Vector(0, 0))
@@ -9941,6 +10516,20 @@ function Weapon:Constructor(location, rotation, asset, collision_type, gravity_e
 ---@param custom_values? table @An optional table with custom values to be set in the inherited class table (Default: {})
 ---@return Weapon.Inherited @The new Class table, inheriting from Weapon
 function Weapon.Inherit(name, custom_values) end
+
+---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/both.png" height="21"> <b>[Client/Server Side]</b>
+---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/base-classes/entity#static-function-getall">docs</a>
+---
+---Returns a table containing all Entities of the class this is called on
+---@return Weapon[] @Copy of table containing all Entities
+function Weapon.GetAll() end
+
+---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/both.png" height="21"> <b>[Client/Server Side]</b>
+---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/base-classes/entity#static-function-getpairs">docs</a>
+---
+---Returns an iterator with all Entities of this class to be used with <code>pairs()</code>.<br/><br/>This is a more performant method than <code>GetAll()</code>, as it will return the iterator to access the Entities directly instead of creating and returning a copy of the Entities table.<br><br><b>Note:</b> Destroying Entities from inside a <code>GetPairs()</code> loop will cause the iterable to change size during the process. If you want to loop-and-destroy, please use <code>GetAll()</code>.
+---@return EntityIterator<Weapon> @Iterator with all Entities of this class
+function Weapon.GetPairs() end
 
 ---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/both.png" height="21"> <b>[Client/Server Side]</b>
 ---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/weapon#function-getammobag">docs</a>
@@ -10189,7 +10778,7 @@ function Weapon:PlayAnimation(animation_path, slot_name, loop_indefinitely, blen
 ---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/server-only.png" height="21"> <b>[Server Side]</b>
 ---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/weapon#function-reload">docs</a>
 ---
----Forces this Weapon to reload (only if being handled by a Character)
+---Forces this Weapon to reload.<br/><br/>It only works while a Character is handling the Weapon
 function Weapon:Reload() end
 
 ---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/server-only.png" height="21"> <b>[Server Side]</b>
@@ -10243,14 +10832,14 @@ function Weapon:SetAnimationReload(reload_animation_path, play_rate) end
 ---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/server-only.png" height="21"> <b>[Server Side]</b>
 ---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/weapon#function-setautoreload">docs</a>
 ---
----If the Character will reload automatically when ammo empties. Default is true
+---Sets if the Character will reload automatically when the clip is empty.<br/><br/>If the Character will reload automatically when ammo empties. Default is true
 ---@param auto_reload boolean @Whether to reload automatically
 function Weapon:SetAutoReload(auto_reload) end
 
 ---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/server-only.png" height="21"> <b>[Server Side]</b>
 ---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/weapon#function-setbulletcolor">docs</a>
 ---
----Set the Bullet Color<br/><br/>Only has effect if using Bullet Trail particle P_Bullet_Trail or if you particle has the Color parameter
+---Set the Bullet Color.<br/><br/>Only has effect if using Bullet Trail particle P_Bullet_Trail or if you particle has the Color parameter
 ---@param bullet_color Color @The new Bullet Color
 function Weapon:SetBulletColor(bullet_color) end
 
@@ -10281,7 +10870,7 @@ function Weapon:SetClipCapacity(clip) end
 ---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/server-only.png" height="21"> <b>[Server Side]</b>
 ---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/weapon#function-setdamage">docs</a>
 ---
----Base Weapon's Damage<br/><br/>This will be multiplied by multiplier factors when hitting specific bones
+---Set the Base Weapon's Damage.<br/><br/>Base Weapon's Damage<br/><br/>This will be multiplied by multiplier factors when hitting specific bones
 ---@param damage integer @The new Base Weapon's Damage
 function Weapon:SetDamage(damage) end
 
@@ -10312,21 +10901,21 @@ function Weapon:SetMagazineMesh(magazine_mesh, magazine_mesh_hide_bone) end
 ---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/weapon#function-setparticlesbarrel">docs</a>
 ---
 ---Sets the Particle of the fire blast at the muzzle
----@param particle_asset_path string @The Particle asset to spawn at the muzzle when firing
+---@param particle_asset_path? string @The Particle asset to spawn at the muzzle when firing, pass nil or an empty string for no particle (Default: nil)
 function Weapon:SetParticlesBarrel(particle_asset_path) end
 
 ---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/server-only.png" height="21"> <b>[Server Side]</b>
 ---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/weapon#function-setparticlesbullettrail">docs</a>
 ---
 ---Sets the Particle of the bullet trail
----@param particle_bullet_trail_asset_path string @The Particle asset to spawn for each bullet
+---@param particle_bullet_trail_asset_path? string @The Particle asset to spawn for each bullet, pass nil or an empty string for no particle (Default: nil)
 function Weapon:SetParticlesBulletTrail(particle_bullet_trail_asset_path) end
 
 ---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/server-only.png" height="21"> <b>[Server Side]</b>
 ---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/weapon#function-setparticlesshells">docs</a>
 ---
 ---Sets the Particle of the empty shells ejected when firing
----@param particle_shells_asset_path string @The Particle asset to spawn when ejecting a shell
+---@param particle_shells_asset_path? string @The Particle asset to spawn when ejecting a shell, pass nil or an empty string for no particle (Default: nil)
 function Weapon:SetParticlesShells(particle_shells_asset_path) end
 
 ---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/server-only.png" height="21"> <b>[Server Side]</b>
@@ -10339,7 +10928,7 @@ function Weapon:SetRecoil(recoil) end
 ---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/server-only.png" height="21"> <b>[Server Side]</b>
 ---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/weapon#function-setrighthandoffset">docs</a>
 ---
----Set the Offset of Right Hand. To position relative to the camera.
+---Set the offset of Right Hand.<br/><br/>Set the Offset of Right Hand. To position relative to the camera.
 ---@param right_hand_offset Vector @The new offset of Right Hand
 function Weapon:SetRightHandOffset(right_hand_offset) end
 
@@ -10362,7 +10951,7 @@ function Weapon:SetSightTransform(sight_location, sight_rotation) end
 ---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/weapon#function-setsoundaim">docs</a>
 ---
 ---Sets the Sound played when starting to aim
----@param sound_aim_asset_path string @The Sound asset to play
+---@param sound_aim_asset_path? string @The Sound asset to play, pass nil or an empty string for no sound (Default: nil)
 ---@param volume? number @Volume multiplier (Default: 1)
 ---@param pitch? number @Pitch multiplier (Default: 1)
 function Weapon:SetSoundAim(sound_aim_asset_path, volume, pitch) end
@@ -10371,7 +10960,7 @@ function Weapon:SetSoundAim(sound_aim_asset_path, volume, pitch) end
 ---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/weapon#function-setsounddry">docs</a>
 ---
 ---Sets the Sound played when trying to fire with an empty clip
----@param sound_dry_asset_path string @The Sound asset to play
+---@param sound_dry_asset_path? string @The Sound asset to play, pass nil or an empty string for no sound (Default: nil)
 ---@param volume? number @Volume multiplier (Default: 1)
 ---@param pitch? number @Pitch multiplier (Default: 1)
 function Weapon:SetSoundDry(sound_dry_asset_path, volume, pitch) end
@@ -10380,7 +10969,7 @@ function Weapon:SetSoundDry(sound_dry_asset_path, volume, pitch) end
 ---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/weapon#function-setsoundfire">docs</a>
 ---
 ---Sets the Sound played when firing
----@param sound_fire_asset_path string @The Sound asset to play
+---@param sound_fire_asset_path? string @The Sound asset to play, pass nil or an empty string for no sound (Default: nil)
 ---@param volume? number @Volume multiplier (Default: 1)
 ---@param pitch? number @Pitch multiplier (Default: 1)
 function Weapon:SetSoundFire(sound_fire_asset_path, volume, pitch) end
@@ -10388,8 +10977,8 @@ function Weapon:SetSoundFire(sound_fire_asset_path, volume, pitch) end
 ---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/server-only.png" height="21"> <b>[Server Side]</b>
 ---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/weapon#function-setsoundfirelastbullets">docs</a>
 ---
----Sound when firing with only having X remaining bullets in the magazine, useful for last shot 'ping' or sound when low on bullets
----@param sound_asset_path string @The Sound asset to play
+---Sound when firing with only having X remaining bullets in the magazine.<br/><br/>Useful for a last shot 'ping' or a sound when low on bullets
+---@param sound_asset_path? string @The Sound asset to play, pass nil or an empty string for no sound (Default: nil)
 ---@param remaining_bullets_count? integer @The amount of remaining bullet to start playing this sound (Default: 1)
 function Weapon:SetSoundFireLastBullets(sound_asset_path, remaining_bullets_count) end
 
@@ -10397,7 +10986,7 @@ function Weapon:SetSoundFireLastBullets(sound_asset_path, remaining_bullets_coun
 ---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/weapon#function-setsoundload">docs</a>
 ---
 ---Sets the Sound played when loading a magazine
----@param sound_load_asset_path string @The Sound asset to play
+---@param sound_load_asset_path? string @The Sound asset to play, pass nil or an empty string for no sound (Default: nil)
 ---@param volume? number @Volume multiplier (Default: 1)
 ---@param pitch? number @Pitch multiplier (Default: 1)
 function Weapon:SetSoundLoad(sound_load_asset_path, volume, pitch) end
@@ -10406,7 +10995,7 @@ function Weapon:SetSoundLoad(sound_load_asset_path, volume, pitch) end
 ---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/weapon#function-setsoundunload">docs</a>
 ---
 ---Sets the Sound played when unloading a magazine
----@param sound_unload_asset_path string @The Sound asset to play
+---@param sound_unload_asset_path? string @The Sound asset to play, pass nil or an empty string for no sound (Default: nil)
 ---@param volume? number @Volume multiplier (Default: 1)
 ---@param pitch? number @Pitch multiplier (Default: 1)
 function Weapon:SetSoundUnload(sound_unload_asset_path, volume, pitch) end
@@ -10415,7 +11004,7 @@ function Weapon:SetSoundUnload(sound_unload_asset_path, volume, pitch) end
 ---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/weapon#function-setsoundzooming">docs</a>
 ---
 ---Sets the Sound played when zooming
----@param sound_zooming_asset_path string @The Sound asset to play
+---@param sound_zooming_asset_path? string @The Sound asset to play, pass nil or an empty string for no sound (Default: nil)
 ---@param volume? number @Volume multiplier (Default: 1)
 ---@param pitch? number @Pitch multiplier (Default: 1)
 function Weapon:SetSoundZooming(sound_zooming_asset_path, volume, pitch) end
@@ -10462,11 +11051,11 @@ function Weapon:StopAnimation(animation_asset) end
 ---@overload fun(event_name: "Destroy", callback: fun(self: Weapon)): fun(self: Weapon) @Triggered when an Entity is destroyed
 ---@overload fun(event_name: "DimensionChange", callback: fun(self: Weapon, old_dimension: integer, new_dimension: integer)): fun(self: Weapon, old_dimension: integer, new_dimension: integer) @Triggered when an Actor changes its dimension
 ---@overload fun(event_name: "Drop", callback: fun(self: Weapon, character: Character, was_triggered_by_player: boolean)): fun(self: Weapon, character: Character, was_triggered_by_player: boolean) @When a Character drops this Pickable
----@overload fun(event_name: "EnterWater", callback: fun(self: Weapon)): fun(self: Weapon) @Triggered when an Actor enters a water body. Only Actors that simulate physics trigger this event, such as <code>Prop</code>, <code>Vehicle</code>, <code>Pickables</code> and <code>Character</code> only.
+---@overload fun(event_name: "EnterWater", callback: fun(self: Weapon)): fun(self: Weapon) @Triggered when an Actor enters a water body.<br/><br/>Only Actors that simulate physics trigger this event, such as <code>Prop</code>, <code>Vehicle</code>, <code>Pickables</code> and <code>Character</code> only.
 ---@overload fun(event_name: "Fire", callback: fun(self: Weapon, shooter: Character)): fun(self: Weapon, shooter: Character) @Triggered when Weapon fires (this will be triggered for each shot)
 ---@overload fun(event_name: "Hit", callback: fun(self: Weapon, impact_force: number, normal_impulse: Vector, impact_location: Vector, velocity: Vector, other_actor?: Actor)): fun(self: Weapon, impact_force: number, normal_impulse: Vector, impact_location: Vector, velocity: Vector, other_actor?: Actor) @When this Pickable hits something
 ---@overload fun(event_name: "Interact", callback: fun(self: Weapon, character: Character): boolean?): fun(self: Weapon, character: Character): boolean? @Triggered when a Character interacts with this Pickable (i.e. tries to pick it up)
----@overload fun(event_name: "LeaveWater", callback: fun(self: Weapon)): fun(self: Weapon) @Triggered when an Actor leaves a water body. Only Actors that simulate physics trigger this event, such as <code>Prop</code>, <code>Vehicle</code>, <code>Pickables</code> and <code>Character</code> only.
+---@overload fun(event_name: "LeaveWater", callback: fun(self: Weapon)): fun(self: Weapon) @Triggered when an Actor leaves a water body.<br/><br/>Only Actors that simulate physics trigger this event, such as <code>Prop</code>, <code>Vehicle</code>, <code>Pickables</code> and <code>Character</code> only.
 ---@overload fun(event_name: "NetworkAuthorityChange", callback: fun(self: Weapon, is_network_authority: boolean)): fun(self: Weapon, is_network_authority: boolean) @Triggered when the local Player gets/loses network authority over this actor
 ---@overload fun(event_name: "PickUp", callback: fun(self: Weapon, character: Character)): fun(self: Weapon, character: Character) @Triggered When a Character picks this up
 ---@overload fun(event_name: "PullUse", callback: fun(self: Weapon, character: Character)): fun(self: Weapon, character: Character) @Triggered when a Character presses the use button for this Pickable (i.e. clicks left mouse button with this equipped)
@@ -10488,11 +11077,11 @@ function Weapon.Subscribe(event_name, callback) end
 ---@overload fun(self: Weapon, event_name: "Destroy", callback: fun(self: Weapon)): fun(self: Weapon) @Triggered when an Entity is destroyed
 ---@overload fun(self: Weapon, event_name: "DimensionChange", callback: fun(self: Weapon, old_dimension: integer, new_dimension: integer)): fun(self: Weapon, old_dimension: integer, new_dimension: integer) @Triggered when an Actor changes its dimension
 ---@overload fun(self: Weapon, event_name: "Drop", callback: fun(self: Weapon, character: Character, was_triggered_by_player: boolean)): fun(self: Weapon, character: Character, was_triggered_by_player: boolean) @When a Character drops this Pickable
----@overload fun(self: Weapon, event_name: "EnterWater", callback: fun(self: Weapon)): fun(self: Weapon) @Triggered when an Actor enters a water body. Only Actors that simulate physics trigger this event, such as <code>Prop</code>, <code>Vehicle</code>, <code>Pickables</code> and <code>Character</code> only.
+---@overload fun(self: Weapon, event_name: "EnterWater", callback: fun(self: Weapon)): fun(self: Weapon) @Triggered when an Actor enters a water body.<br/><br/>Only Actors that simulate physics trigger this event, such as <code>Prop</code>, <code>Vehicle</code>, <code>Pickables</code> and <code>Character</code> only.
 ---@overload fun(self: Weapon, event_name: "Fire", callback: fun(self: Weapon, shooter: Character)): fun(self: Weapon, shooter: Character) @Triggered when Weapon fires (this will be triggered for each shot)
 ---@overload fun(self: Weapon, event_name: "Hit", callback: fun(self: Weapon, impact_force: number, normal_impulse: Vector, impact_location: Vector, velocity: Vector, other_actor?: Actor)): fun(self: Weapon, impact_force: number, normal_impulse: Vector, impact_location: Vector, velocity: Vector, other_actor?: Actor) @When this Pickable hits something
 ---@overload fun(self: Weapon, event_name: "Interact", callback: fun(self: Weapon, character: Character): boolean?): fun(self: Weapon, character: Character): boolean? @Triggered when a Character interacts with this Pickable (i.e. tries to pick it up)
----@overload fun(self: Weapon, event_name: "LeaveWater", callback: fun(self: Weapon)): fun(self: Weapon) @Triggered when an Actor leaves a water body. Only Actors that simulate physics trigger this event, such as <code>Prop</code>, <code>Vehicle</code>, <code>Pickables</code> and <code>Character</code> only.
+---@overload fun(self: Weapon, event_name: "LeaveWater", callback: fun(self: Weapon)): fun(self: Weapon) @Triggered when an Actor leaves a water body.<br/><br/>Only Actors that simulate physics trigger this event, such as <code>Prop</code>, <code>Vehicle</code>, <code>Pickables</code> and <code>Character</code> only.
 ---@overload fun(self: Weapon, event_name: "NetworkAuthorityChange", callback: fun(self: Weapon, is_network_authority: boolean)): fun(self: Weapon, is_network_authority: boolean) @Triggered when the local Player gets/loses network authority over this actor
 ---@overload fun(self: Weapon, event_name: "PickUp", callback: fun(self: Weapon, character: Character)): fun(self: Weapon, character: Character) @Triggered When a Character picks this up
 ---@overload fun(self: Weapon, event_name: "PullUse", callback: fun(self: Weapon, character: Character)): fun(self: Weapon, character: Character) @Triggered when a Character presses the use button for this Pickable (i.e. clicks left mouse button with this equipped)
@@ -10512,11 +11101,11 @@ function Weapon:Subscribe(event_name, callback) end
 ---@overload fun(self: Weapon, event_name: "Destroy", callback: fun(self: Weapon)) @Triggered when an Entity is destroyed
 ---@overload fun(self: Weapon, event_name: "DimensionChange", callback: fun(self: Weapon, old_dimension: integer, new_dimension: integer)) @Triggered when an Actor changes its dimension
 ---@overload fun(self: Weapon, event_name: "Drop", callback: fun(self: Weapon, character: Character, was_triggered_by_player: boolean)) @When a Character drops this Pickable
----@overload fun(self: Weapon, event_name: "EnterWater", callback: fun(self: Weapon)) @Triggered when an Actor enters a water body. Only Actors that simulate physics trigger this event, such as <code>Prop</code>, <code>Vehicle</code>, <code>Pickables</code> and <code>Character</code> only.
+---@overload fun(self: Weapon, event_name: "EnterWater", callback: fun(self: Weapon)) @Triggered when an Actor enters a water body.<br/><br/>Only Actors that simulate physics trigger this event, such as <code>Prop</code>, <code>Vehicle</code>, <code>Pickables</code> and <code>Character</code> only.
 ---@overload fun(self: Weapon, event_name: "Fire", callback: fun(self: Weapon, shooter: Character)) @Triggered when Weapon fires (this will be triggered for each shot)
 ---@overload fun(self: Weapon, event_name: "Hit", callback: fun(self: Weapon, impact_force: number, normal_impulse: Vector, impact_location: Vector, velocity: Vector, other_actor?: Actor)) @When this Pickable hits something
 ---@overload fun(self: Weapon, event_name: "Interact", callback: fun(self: Weapon, character: Character): boolean?) @Triggered when a Character interacts with this Pickable (i.e. tries to pick it up)
----@overload fun(self: Weapon, event_name: "LeaveWater", callback: fun(self: Weapon)) @Triggered when an Actor leaves a water body. Only Actors that simulate physics trigger this event, such as <code>Prop</code>, <code>Vehicle</code>, <code>Pickables</code> and <code>Character</code> only.
+---@overload fun(self: Weapon, event_name: "LeaveWater", callback: fun(self: Weapon)) @Triggered when an Actor leaves a water body.<br/><br/>Only Actors that simulate physics trigger this event, such as <code>Prop</code>, <code>Vehicle</code>, <code>Pickables</code> and <code>Character</code> only.
 ---@overload fun(self: Weapon, event_name: "NetworkAuthorityChange", callback: fun(self: Weapon, is_network_authority: boolean)) @Triggered when the local Player gets/loses network authority over this actor
 ---@overload fun(self: Weapon, event_name: "PickUp", callback: fun(self: Weapon, character: Character)) @Triggered When a Character picks this up
 ---@overload fun(self: Weapon, event_name: "PullUse", callback: fun(self: Weapon, character: Character)) @Triggered when a Character presses the use button for this Pickable (i.e. clicks left mouse button with this equipped)
@@ -10537,11 +11126,11 @@ function Weapon:Unsubscribe(event_name, callback) end
 ---@overload fun(event_name: "Destroy", callback: fun(self: Weapon)) @Triggered when an Entity is destroyed
 ---@overload fun(event_name: "DimensionChange", callback: fun(self: Weapon, old_dimension: integer, new_dimension: integer)) @Triggered when an Actor changes its dimension
 ---@overload fun(event_name: "Drop", callback: fun(self: Weapon, character: Character, was_triggered_by_player: boolean)) @When a Character drops this Pickable
----@overload fun(event_name: "EnterWater", callback: fun(self: Weapon)) @Triggered when an Actor enters a water body. Only Actors that simulate physics trigger this event, such as <code>Prop</code>, <code>Vehicle</code>, <code>Pickables</code> and <code>Character</code> only.
+---@overload fun(event_name: "EnterWater", callback: fun(self: Weapon)) @Triggered when an Actor enters a water body.<br/><br/>Only Actors that simulate physics trigger this event, such as <code>Prop</code>, <code>Vehicle</code>, <code>Pickables</code> and <code>Character</code> only.
 ---@overload fun(event_name: "Fire", callback: fun(self: Weapon, shooter: Character)) @Triggered when Weapon fires (this will be triggered for each shot)
 ---@overload fun(event_name: "Hit", callback: fun(self: Weapon, impact_force: number, normal_impulse: Vector, impact_location: Vector, velocity: Vector, other_actor?: Actor)) @When this Pickable hits something
 ---@overload fun(event_name: "Interact", callback: fun(self: Weapon, character: Character): boolean?) @Triggered when a Character interacts with this Pickable (i.e. tries to pick it up)
----@overload fun(event_name: "LeaveWater", callback: fun(self: Weapon)) @Triggered when an Actor leaves a water body. Only Actors that simulate physics trigger this event, such as <code>Prop</code>, <code>Vehicle</code>, <code>Pickables</code> and <code>Character</code> only.
+---@overload fun(event_name: "LeaveWater", callback: fun(self: Weapon)) @Triggered when an Actor leaves a water body.<br/><br/>Only Actors that simulate physics trigger this event, such as <code>Prop</code>, <code>Vehicle</code>, <code>Pickables</code> and <code>Character</code> only.
 ---@overload fun(event_name: "NetworkAuthorityChange", callback: fun(self: Weapon, is_network_authority: boolean)) @Triggered when the local Player gets/loses network authority over this actor
 ---@overload fun(event_name: "PickUp", callback: fun(self: Weapon, character: Character)) @Triggered When a Character picks this up
 ---@overload fun(event_name: "PullUse", callback: fun(self: Weapon, character: Character)) @Triggered when a Character presses the use button for this Pickable (i.e. clicks left mouse button with this equipped)
@@ -10588,6 +11177,20 @@ function WebUI:Constructor(name, path, visibility, is_transparent, auto_resize, 
 ---@return WebUI.Inherited @The new Class table, inheriting from WebUI
 function WebUI.Inherit(name, custom_values) end
 
+---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/both.png" height="21"> <b>[Client/Server Side]</b>
+---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/base-classes/entity#static-function-getall">docs</a>
+---
+---Returns a table containing all Entities of the class this is called on
+---@return WebUI[] @Copy of table containing all Entities
+function WebUI.GetAll() end
+
+---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/both.png" height="21"> <b>[Client/Server Side]</b>
+---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/base-classes/entity#static-function-getpairs">docs</a>
+---
+---Returns an iterator with all Entities of this class to be used with <code>pairs()</code>.<br/><br/>This is a more performant method than <code>GetAll()</code>, as it will return the iterator to access the Entities directly instead of creating and returning a copy of the Entities table.<br><br><b>Note:</b> Destroying Entities from inside a <code>GetPairs()</code> loop will cause the iterable to change size during the process. If you want to loop-and-destroy, please use <code>GetAll()</code>.
+---@return EntityIterator<WebUI> @Iterator with all Entities of this class
+function WebUI.GetPairs() end
+
 ---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/client-only.png" height="21"> <b>[Client Side]</b>
 ---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/webui#function-bringtofront">docs</a>
 ---
@@ -10611,7 +11214,7 @@ function WebUI:CloseDevTools() end
 ---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/client-only.png" height="21"> <b>[Client Side]</b>
 ---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/webui#function-executejavascript">docs</a>
 ---
----Executes a JavaScript code in the Browser<br/>Note: This method is experimental and should be used cautiously. Events are still the preferred way of communicating between Packages and WebUI.
+---Executes a JavaScript code in the Browser.<br/><br/>Note: This method is experimental and should be used cautiously. Events are still the preferred way of communicating between Packages and WebUI.
 ---@param javascript_code string @The JavaScript code to run
 function WebUI:ExecuteJavaScript(javascript_code) end
 
@@ -10680,7 +11283,7 @@ function WebUI:OpenDevTools() end
 ---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/client-only.png" height="21"> <b>[Client Side]</b>
 ---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/webui#function-removefocus">docs</a>
 ---
----Removes the focus from this WebUI (and sets it back to game viewport)<br/>You MUST call this after you don't need keyboard input anymore
+---Removes the focus from this WebUI (and sets it back to game viewport).<br/><br/>You MUST call this after you don't need keyboard input anymore
 function WebUI:RemoveFocus() end
 
 ---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/client-only.png" height="21"> <b>[Client Side]</b>
@@ -10695,7 +11298,7 @@ function WebUI:SendKeyEvent(key_type, key_code, modifiers) end
 ---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/client-only.png" height="21"> <b>[Client Side]</b>
 ---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/webui#function-sendmouseclickevent">docs</a>
 ---
----You must send both Down and Up to make it work properly
+---Sends a Mouse Click into the WebUI programmatically.<br/><br/>You must send both Down and Up to make it work properly
 ---@param mouse_x integer @Position X of the mouse
 ---@param mouse_y integer @Position Y of the mouse
 ---@param mouse_type WebUIMouseType @Which mouse button
@@ -10727,7 +11330,7 @@ function WebUI:SendMouseWheelEvent(mouse_x, mouse_y, delta_x, delta_y) end
 ---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/client-only.png" height="21"> <b>[Client Side]</b>
 ---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/webui#function-setfocus">docs</a>
 ---
----Enables the focus on this browser (i.e. can receive Keyboard input and will trigger input events)<br/>Note: Only one browser can have focus per time.
+---Enables the focus on this browser (i.e. can receive Keyboard input and will trigger input events).<br/><br/>Note: Only one browser can have focus per time.
 function WebUI:SetFocus() end
 
 ---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/client-only.png" height="21"> <b>[Client Side]</b>
@@ -10740,7 +11343,7 @@ function WebUI:SetFreeze(freeze) end
 ---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/client-only.png" height="21"> <b>[Client Side]</b>
 ---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/webui#function-setlayout">docs</a>
 ---
----Sets the Layout as Canvas on Screen. <strong>Anchors</strong>:<br/><br/><img src='/img/docs/anchors.webp' />
+---Sets the Layout as Canvas on Screen.<br/><br/><strong>Anchors</strong>:<br/><br/><img src='/img/docs/anchors.webp' />
 ---@param location? Vector2D @Screen location, or the left and top offsets when the anchors are stretched (Default: Vector2D(0, 0))
 ---@param size? Vector2D @Size, or the right and bottom offsets when the anchors are stretched (Default: Vector2D(0, 0))
 ---@param anchors_min? Vector2D @Min anchor, from (0, 0) top-left to (1, 1) bottom-right (Default: Vector2D(0, 0))
@@ -10850,6 +11453,20 @@ function Widget:Constructor(blueprint_path) end
 ---@return Widget.Inherited @The new Class table, inheriting from Widget
 function Widget.Inherit(name, custom_values) end
 
+---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/both.png" height="21"> <b>[Client/Server Side]</b>
+---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/base-classes/entity#static-function-getall">docs</a>
+---
+---Returns a table containing all Entities of the class this is called on
+---@return Widget[] @Copy of table containing all Entities
+function Widget.GetAll() end
+
+---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/both.png" height="21"> <b>[Client/Server Side]</b>
+---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/base-classes/entity#static-function-getpairs">docs</a>
+---
+---Returns an iterator with all Entities of this class to be used with <code>pairs()</code>.<br/><br/>This is a more performant method than <code>GetAll()</code>, as it will return the iterator to access the Entities directly instead of creating and returning a copy of the Entities table.<br><br><b>Note:</b> Destroying Entities from inside a <code>GetPairs()</code> loop will cause the iterable to change size during the process. If you want to loop-and-destroy, please use <code>GetAll()</code>.
+---@return EntityIterator<Widget> @Iterator with all Entities of this class
+function Widget.GetPairs() end
+
 ---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/client-only.png" height="21"> <b>[Client Side]</b>
 ---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/widget#function-addchild">docs</a>
 ---
@@ -10875,13 +11492,13 @@ function Widget:BindBlueprintEventDispatcher(dispatcher_name, callback) end
 ---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/client-only.png" height="21"> <b>[Client Side]</b>
 ---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/widget#function-bringtofront">docs</a>
 ---
----Puts this Widget in the front of all WebUIs and Widgets. Note: You can only call it if the Widget is parented to the Viewport!
+---Puts this Widget in the front of all WebUIs and Widgets.<br/><br/>Note: You can only call it if the Widget is parented to the Viewport!
 function Widget:BringToFront() end
 
 ---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/client-only.png" height="21"> <b>[Client Side]</b>
 ---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/widget#function-callblueprintevent">docs</a>
 ---
----Calls a Blueprint Event or Function<br/>Returns all Function return values on <strong>Client Side</strong>
+---Calls a Blueprint Event or Function.<br/><br/>Returns all Function return values on <strong>Client Side</strong>
 ---@param event_name string @Event or Function name
 ---@param ...? any @Sequence of arguments to pass to the event (Default: nil)
 ---@return any... @the function return values
@@ -10921,7 +11538,7 @@ function Widget:SetContentForSlot(slot_name, widget) end
 ---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/client-only.png" height="21"> <b>[Client Side]</b>
 ---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/widget#function-setfocus">docs</a>
 ---
----Enables the focus on this Widget (i.e. can receive Keyboard input and will trigger input events<br/>Note: Only one Widget can have focus per time.
+---Enables the focus on this Widget.<br/><br/>Enables the focus on this Widget (i.e. can receive Keyboard input and will trigger input events)<br/>Note: Only one Widget can have focus per time.
 function Widget:SetFocus() end
 
 ---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/client-only.png" height="21"> <b>[Client Side]</b>
@@ -11051,6 +11668,20 @@ Widget3D = {}
 ---@return Widget3D.Inherited @The new Class table, inheriting from Widget3D
 function Widget3D.Inherit(name, custom_values) end
 
+---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/both.png" height="21"> <b>[Client/Server Side]</b>
+---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/base-classes/entity#static-function-getall">docs</a>
+---
+---Returns a table containing all Entities of the class this is called on
+---@return Widget3D[] @Copy of table containing all Entities
+function Widget3D.GetAll() end
+
+---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/both.png" height="21"> <b>[Client/Server Side]</b>
+---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/base-classes/entity#static-function-getpairs">docs</a>
+---
+---Returns an iterator with all Entities of this class to be used with <code>pairs()</code>.<br/><br/>This is a more performant method than <code>GetAll()</code>, as it will return the iterator to access the Entities directly instead of creating and returning a copy of the Entities table.<br><br><b>Note:</b> Destroying Entities from inside a <code>GetPairs()</code> loop will cause the iterable to change size during the process. If you want to loop-and-destroy, please use <code>GetAll()</code>.
+---@return EntityIterator<Widget3D> @Iterator with all Entities of this class
+function Widget3D.GetPairs() end
+
 ---<img src="https://raw.github.com/nanos-world/vscode-extension/master/assets/client-only.png" height="21"> <b>[Client Side]</b>
 ---<a href="https://docs.nanos-world.com/docs/scripting-reference/classes/widget3d#function-getwidget">docs</a>
 ---
@@ -11079,8 +11710,8 @@ function Widget3D:SetAutoRepaintRate(rate) end
 ---@overload fun(event_name: "ClassRegister", callback: fun(class: table)): fun(class: table) @Triggered when a new Class is registered with the <a href='/docs/core-concepts/scripting/inheriting-classes'>Inheriting System</a>
 ---@overload fun(event_name: "Destroy", callback: fun(self: Widget3D)): fun(self: Widget3D) @Triggered when an Entity is destroyed
 ---@overload fun(event_name: "DimensionChange", callback: fun(self: Widget3D, old_dimension: integer, new_dimension: integer)): fun(self: Widget3D, old_dimension: integer, new_dimension: integer) @Triggered when an Actor changes its dimension
----@overload fun(event_name: "EnterWater", callback: fun(self: Widget3D)): fun(self: Widget3D) @Triggered when an Actor enters a water body. Only Actors that simulate physics trigger this event, such as <code>Prop</code>, <code>Vehicle</code>, <code>Pickables</code> and <code>Character</code> only.
----@overload fun(event_name: "LeaveWater", callback: fun(self: Widget3D)): fun(self: Widget3D) @Triggered when an Actor leaves a water body. Only Actors that simulate physics trigger this event, such as <code>Prop</code>, <code>Vehicle</code>, <code>Pickables</code> and <code>Character</code> only.
+---@overload fun(event_name: "EnterWater", callback: fun(self: Widget3D)): fun(self: Widget3D) @Triggered when an Actor enters a water body.<br/><br/>Only Actors that simulate physics trigger this event, such as <code>Prop</code>, <code>Vehicle</code>, <code>Pickables</code> and <code>Character</code> only.
+---@overload fun(event_name: "LeaveWater", callback: fun(self: Widget3D)): fun(self: Widget3D) @Triggered when an Actor leaves a water body.<br/><br/>Only Actors that simulate physics trigger this event, such as <code>Prop</code>, <code>Vehicle</code>, <code>Pickables</code> and <code>Character</code> only.
 ---@overload fun(event_name: "NetworkAuthorityChange", callback: fun(self: Widget3D, is_network_authority: boolean)): fun(self: Widget3D, is_network_authority: boolean) @Triggered when the local Player gets/loses network authority over this actor
 ---@overload fun(event_name: "Spawn", callback: fun(self: Widget3D)): fun(self: Widget3D) @Triggered when an Entity is spawned/created
 ---@overload fun(event_name: "ValueChange", callback: fun(self: Widget3D, key: string, value: any)): fun(self: Widget3D, key: string, value: any) @Triggered when an Entity has a value changed with <code>:SetValue()</code>
@@ -11094,8 +11725,8 @@ function Widget3D.Subscribe(event_name, callback) end
 ---@overload fun(self: Widget3D, event_name: "ClassRegister", callback: fun(class: table)): fun(class: table) @Triggered when a new Class is registered with the <a href='/docs/core-concepts/scripting/inheriting-classes'>Inheriting System</a>
 ---@overload fun(self: Widget3D, event_name: "Destroy", callback: fun(self: Widget3D)): fun(self: Widget3D) @Triggered when an Entity is destroyed
 ---@overload fun(self: Widget3D, event_name: "DimensionChange", callback: fun(self: Widget3D, old_dimension: integer, new_dimension: integer)): fun(self: Widget3D, old_dimension: integer, new_dimension: integer) @Triggered when an Actor changes its dimension
----@overload fun(self: Widget3D, event_name: "EnterWater", callback: fun(self: Widget3D)): fun(self: Widget3D) @Triggered when an Actor enters a water body. Only Actors that simulate physics trigger this event, such as <code>Prop</code>, <code>Vehicle</code>, <code>Pickables</code> and <code>Character</code> only.
----@overload fun(self: Widget3D, event_name: "LeaveWater", callback: fun(self: Widget3D)): fun(self: Widget3D) @Triggered when an Actor leaves a water body. Only Actors that simulate physics trigger this event, such as <code>Prop</code>, <code>Vehicle</code>, <code>Pickables</code> and <code>Character</code> only.
+---@overload fun(self: Widget3D, event_name: "EnterWater", callback: fun(self: Widget3D)): fun(self: Widget3D) @Triggered when an Actor enters a water body.<br/><br/>Only Actors that simulate physics trigger this event, such as <code>Prop</code>, <code>Vehicle</code>, <code>Pickables</code> and <code>Character</code> only.
+---@overload fun(self: Widget3D, event_name: "LeaveWater", callback: fun(self: Widget3D)): fun(self: Widget3D) @Triggered when an Actor leaves a water body.<br/><br/>Only Actors that simulate physics trigger this event, such as <code>Prop</code>, <code>Vehicle</code>, <code>Pickables</code> and <code>Character</code> only.
 ---@overload fun(self: Widget3D, event_name: "NetworkAuthorityChange", callback: fun(self: Widget3D, is_network_authority: boolean)): fun(self: Widget3D, is_network_authority: boolean) @Triggered when the local Player gets/loses network authority over this actor
 ---@overload fun(self: Widget3D, event_name: "Spawn", callback: fun(self: Widget3D)): fun(self: Widget3D) @Triggered when an Entity is spawned/created
 ---@overload fun(self: Widget3D, event_name: "ValueChange", callback: fun(self: Widget3D, key: string, value: any)): fun(self: Widget3D, key: string, value: any) @Triggered when an Entity has a value changed with <code>:SetValue()</code>
@@ -11107,8 +11738,8 @@ function Widget3D:Subscribe(event_name, callback) end
 ---@overload fun(self: Widget3D, event_name: "ClassRegister", callback: fun(class: table)) @Triggered when a new Class is registered with the <a href='/docs/core-concepts/scripting/inheriting-classes'>Inheriting System</a>
 ---@overload fun(self: Widget3D, event_name: "Destroy", callback: fun(self: Widget3D)) @Triggered when an Entity is destroyed
 ---@overload fun(self: Widget3D, event_name: "DimensionChange", callback: fun(self: Widget3D, old_dimension: integer, new_dimension: integer)) @Triggered when an Actor changes its dimension
----@overload fun(self: Widget3D, event_name: "EnterWater", callback: fun(self: Widget3D)) @Triggered when an Actor enters a water body. Only Actors that simulate physics trigger this event, such as <code>Prop</code>, <code>Vehicle</code>, <code>Pickables</code> and <code>Character</code> only.
----@overload fun(self: Widget3D, event_name: "LeaveWater", callback: fun(self: Widget3D)) @Triggered when an Actor leaves a water body. Only Actors that simulate physics trigger this event, such as <code>Prop</code>, <code>Vehicle</code>, <code>Pickables</code> and <code>Character</code> only.
+---@overload fun(self: Widget3D, event_name: "EnterWater", callback: fun(self: Widget3D)) @Triggered when an Actor enters a water body.<br/><br/>Only Actors that simulate physics trigger this event, such as <code>Prop</code>, <code>Vehicle</code>, <code>Pickables</code> and <code>Character</code> only.
+---@overload fun(self: Widget3D, event_name: "LeaveWater", callback: fun(self: Widget3D)) @Triggered when an Actor leaves a water body.<br/><br/>Only Actors that simulate physics trigger this event, such as <code>Prop</code>, <code>Vehicle</code>, <code>Pickables</code> and <code>Character</code> only.
 ---@overload fun(self: Widget3D, event_name: "NetworkAuthorityChange", callback: fun(self: Widget3D, is_network_authority: boolean)) @Triggered when the local Player gets/loses network authority over this actor
 ---@overload fun(self: Widget3D, event_name: "Spawn", callback: fun(self: Widget3D)) @Triggered when an Entity is spawned/created
 ---@overload fun(self: Widget3D, event_name: "ValueChange", callback: fun(self: Widget3D, key: string, value: any)) @Triggered when an Entity has a value changed with <code>:SetValue()</code>
@@ -11121,8 +11752,8 @@ function Widget3D:Unsubscribe(event_name, callback) end
 ---@overload fun(event_name: "ClassRegister", callback: fun(class: table)) @Triggered when a new Class is registered with the <a href='/docs/core-concepts/scripting/inheriting-classes'>Inheriting System</a>
 ---@overload fun(event_name: "Destroy", callback: fun(self: Widget3D)) @Triggered when an Entity is destroyed
 ---@overload fun(event_name: "DimensionChange", callback: fun(self: Widget3D, old_dimension: integer, new_dimension: integer)) @Triggered when an Actor changes its dimension
----@overload fun(event_name: "EnterWater", callback: fun(self: Widget3D)) @Triggered when an Actor enters a water body. Only Actors that simulate physics trigger this event, such as <code>Prop</code>, <code>Vehicle</code>, <code>Pickables</code> and <code>Character</code> only.
----@overload fun(event_name: "LeaveWater", callback: fun(self: Widget3D)) @Triggered when an Actor leaves a water body. Only Actors that simulate physics trigger this event, such as <code>Prop</code>, <code>Vehicle</code>, <code>Pickables</code> and <code>Character</code> only.
+---@overload fun(event_name: "EnterWater", callback: fun(self: Widget3D)) @Triggered when an Actor enters a water body.<br/><br/>Only Actors that simulate physics trigger this event, such as <code>Prop</code>, <code>Vehicle</code>, <code>Pickables</code> and <code>Character</code> only.
+---@overload fun(event_name: "LeaveWater", callback: fun(self: Widget3D)) @Triggered when an Actor leaves a water body.<br/><br/>Only Actors that simulate physics trigger this event, such as <code>Prop</code>, <code>Vehicle</code>, <code>Pickables</code> and <code>Character</code> only.
 ---@overload fun(event_name: "NetworkAuthorityChange", callback: fun(self: Widget3D, is_network_authority: boolean)) @Triggered when the local Player gets/loses network authority over this actor
 ---@overload fun(event_name: "Spawn", callback: fun(self: Widget3D)) @Triggered when an Entity is spawned/created
 ---@overload fun(event_name: "ValueChange", callback: fun(self: Widget3D, key: string, value: any)) @Triggered when an Entity has a value changed with <code>:SetValue()</code>
@@ -11488,18 +12119,22 @@ LightType = {
 ---<a href="https://docs.nanos-world.com/docs/scripting-reference/glossary/enums#logtype">docs</a>
 ---@enum LogType
 LogType = {
-    Chat = 8, -- Chat messages
+    Chat = 9, -- Chat messages
     Debug = 3,
     Display = 0,
     Error = 2,
-    Fatal = 11,
+    Fatal = 12,
+    Profiling = 14, -- Profiling output
+    ProfilingWarning = 15, -- Profiling warnings
     Scripting = 5, -- Messages printed by scripts
+    ScriptingDebug = 8, -- Debug messages printed by scripts
     ScriptingError = 7, -- Errors raised by scripts
     ScriptingWarn = 6, -- Warnings printed by scripts
-    Success = 10,
+    Success = 11,
     Verbose = 4,
     Warning = 1,
-    WebUI = 9, -- Messages logged from WebUI JavaScrip
+    WarningRed = 13, -- Warnings highlighted in red
+    WebUI = 10, -- Messages logged from WebUI JavaScrip
 }
 
 ---<a href="https://docs.nanos-world.com/docs/scripting-reference/glossary/enums#nativewidget">docs</a>
@@ -11601,7 +12236,6 @@ SpawnMode = {
 StanceMode = {
     Crouching = 2, -- Crouching
     None = 0, -- No stance
-    Proning = 3, -- Lying prone
     Standing = 1, -- Standin
 }
 
